@@ -2,15 +2,13 @@ figure.figsize   : 5, 5   # figure size in inches
 savefig.dpi      : 600      # figure dots per inch
 
 font.size: 18
-font.family: serif
-font.serif: Computer Modern, Latin Modern Roman, Bitstream Vera Serif
-font.sans-serif    : Computer Modern Sans serif, Helvetica, Avant Garde
-text.usetex: True
-axes.linewidth: 1.0
+# Disable LaTeX and use system fonts
+text.usetex: False
+font.family: sans-serif
+font.sans-serif: DejaVu Sans, Arial, Helvetica, Liberation Sans, Bitstream Vera Sans, sans-serif
 font.weight: bold
 
-#mathtext.fontset: custom
-#mathtext.bf: True
+axes.linewidth: 1.0
 
 axes.prop_cycle: cycler('color', ['29A2C6','FF6D31','73B66B','EF597B', '333333', 'FFCB18'])
 axes.grid: False

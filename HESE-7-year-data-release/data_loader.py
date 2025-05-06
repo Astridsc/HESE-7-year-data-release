@@ -145,5 +145,8 @@ if __name__ == "__main__":
         "./resources/data/HESE_mc_flux.json",
         "./resources/data/HESE_mc_truth.json",
     ]
-    load_mc(mc_filenames)
-    load_data("./resources/data/HESE_data.json")
+    mc = load_mc(mc_filenames)
+    data = load_data("./resources/data/HESE_data.json")
+    print(len(mc), type(mc))
+    print(data)
+    print(len(data), type(data))

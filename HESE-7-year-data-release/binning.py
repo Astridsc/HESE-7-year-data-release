@@ -184,3 +184,5 @@ def bin_data(data):
     sorted_data, bin_slices = sort_by_bin(data, masks)
 
     return sorted_data, bin_slices
+
+

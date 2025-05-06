@@ -1,10 +1,13 @@
 import numpy as np
 import meander
 import scipy.special
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import matplotlib.style
 
 matplotlib.style.use("./resources/mpl/paper.mplstyle")
+plt.rcParams['text.usetex'] = False  # Disable LaTeX text rendering
 
 # Each line in the text file corresponds to a fit with fixed astrogamma and astronorm
 # The first column is the chosen astrogamma
@@ -43,8 +46,8 @@ contours_by_level = meander.compute_contours(
 fig, ax = plt.subplots()
 
 cm = plt.get_cmap("plasma")
-plt.xlabel(r"$\gamma_{\texttt{astro}}$")
-plt.ylabel(r"$\Phi_{\texttt{astro}}$")
+plt.xlabel("γ_astro")  # Changed from LaTeX to plain text
+plt.ylabel("Φ_astro")  # Changed from LaTeX to plain text
 plt.xlim(1.7, 3.8)
 plt.ylim(0, 15)
 
@@ -64,4 +67,4 @@ for j, contours in enumerate(contours_by_level):
         )
 
 plt.tight_layout()
-plt.show()
+plt.savefig('astro_scan.png')  # Save the plot instead of showing it

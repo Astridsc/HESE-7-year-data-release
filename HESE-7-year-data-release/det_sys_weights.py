@@ -38,7 +38,7 @@ class SysWeighter:
 
         # This member variable keeps track of the indices for each combination
         # of particle type and morphology type in the weights
-        self.particle_masks = np.array(particle_masks)
+        self.particle_masks = particle_masks
 
         sys_name_list = [
             ("HoleIce", self.nominal_hole_ice_forward),

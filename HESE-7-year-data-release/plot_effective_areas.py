@@ -16,6 +16,9 @@ import json
 
 outdir = "./effective_areas/"
 
+# Disable LaTeX text rendering
+plt.rcParams['text.usetex'] = False
+
 
 def center(x):
     x = np.asarray(x)
@@ -193,8 +196,8 @@ def plot_effective_areas(json_files=mc_filenames):
         ax.set_yscale("log")
         ax.set_xlim((1e4, 1e7))
         ax.set_ylim((1e-4, 2e3))
-        ax.set_xlabel(r"$\textmd{Neutrino Energy}~[\textmd{GeV}]$")
-        ax.set_ylabel(r"$\textmd{Effective Area}~[\textmd{m}^2]$")
+        ax.set_xlabel("Neutrino Energy [GeV]")
+        ax.set_ylabel("Effective Area [m²]")
 
         # Override the yaxis tick settings
         major = 10.0 ** np.arange(-3, 5)
@@ -222,16 +225,7 @@ def plot_effective_areas(json_files=mc_filenames):
     for flavor_index, flavor in enumerate(["e", "mu", "tau"]):
         color = cm((float(flavor_index) / float(n_flavors)) * 0.8 + 0.1)
         line_style = line_styles[0]
-        flavor_string = flavor if flavor == "e" else "\\" + flavor
-        label = (
-            r"$"
-            + r"\nu_{"
-            + flavor_string
-            + r"} + \bar\nu_{"
-            + flavor_string
-            + "}"
-            + r"$"
-        )
+        label = f"ν_{flavor} + ν̄_{flavor}"
         particle_key = "2nu" + flavor
         particle_mask = particle_masks[particle_key]
         masks = np.logical_and(particle_mask[None, :], nu_energy_masks)
@@ -252,12 +246,8 @@ def plot_effective_areas(json_files=mc_filenames):
         ):
             line_style = line_styles[antiparticle_index]
             label = (
-                r"$"
-                + (r"\bar" if is_antiparticle else "")
-                + r"\nu_{"
-                + (flavor if flavor == "e" else "\\" + flavor)
-                + "}"
-                + r"$"
+                f"ν_{flavor if flavor == 'e' else '\\' + flavor}"
+                + (f"̄" if is_antiparticle else "")
             )
             particle_key = "nu" + flavor + antiparticle_suffix
             particle_mask = particle_masks[particle_key]
@@ -275,12 +265,8 @@ def plot_effective_areas(json_files=mc_filenames):
             color = cm((float(flavor_index) / float(n_flavors)) * 0.8 + 0.1)
             line_style = "-"
             label = (
-                r"$"
-                + (r"\bar" if is_antiparticle else "")
-                + r"\nu_{"
-                + (flavor if flavor == "e" else "\\" + flavor)
-                + "}"
-                + r"$"
+                f"ν_{flavor if flavor == 'e' else '\\' + flavor}"
+                + (f"̄" if is_antiparticle else "")
             )
             particle_key = "nu" + flavor + antiparticle_suffix
             particle_mask = particle_masks[particle_key]
@@ -302,13 +288,9 @@ def plot_effective_areas(json_files=mc_filenames):
             for interaction_index, interaction in enumerate(["CC", "NC", "GR"]):
                 color = cm((float(interaction_index) / float(3)) * 0.8 + 0.1)
                 label = (
-                    r"$"
-                    + (r"\bar" if is_antiparticle else "")
-                    + r"\nu_{"
-                    + (flavor if flavor == "e" else "\\" + flavor)
-                    + r"} \textmd{"
-                    + interaction
-                    + r"}$"
+                    f"ν_{flavor if flavor == 'e' else '\\' + flavor}"
+                    + (f"̄" if is_antiparticle else "")
+                    + f" {interaction}"
                 )
                 particle_key = "nu" + flavor + antiparticle_suffix
                 particle_mask = particle_masks[particle_key]
@@ -331,16 +313,10 @@ def plot_effective_areas(json_files=mc_filenames):
         color = cm((float(flavor_index) / float(n_flavors)) * 0.8 + 0.1)
         for interaction_index, interaction in enumerate(["CC"]):
             line_style = line_styles[interaction_index]
-            flavor_string = flavor if flavor == "e" else "\\" + flavor
             label = (
-                r"$"
-                + r"\nu_{"
-                + flavor_string
-                + r"} + \bar\nu_{"
-                + flavor_string
-                + r"} \textmd{"
-                + interaction
-                + r"}$"
+                f"ν_{flavor if flavor == 'e' else '\\' + flavor}"
+                + f" + ν̄_{flavor if flavor == 'e' else '\\' + flavor}"
+                + f" {interaction}"
             )
             particle_key = "2nu" + flavor
             particle_mask = particle_masks[particle_key]
@@ -356,8 +332,7 @@ def plot_effective_areas(json_files=mc_filenames):
 
     color = "#4d4d4d"
     line_style = line_styles[1]
-    flavor_string = flavor if flavor == "e" else "\\" + flavor
-    label = r"$\textmd{NC All Flavor}$"
+    label = "NC All Flavor"
     masks = np.logical_and(interaction_masks[1][None, :], nu_energy_masks)
     # The factor of 0.5 is needed so that we compute the average
     # neutrino/antineutrino effective area. This is in contrast to the
@@ -368,14 +343,10 @@ def plot_effective_areas(json_files=mc_filenames):
     line_style = line_styles[2]
     color = cm((float(0) / float(n_flavors)) * 0.8 + 0.1)
     flavor = "e"
-    flavor_string = flavor
     label = (
-        r"$"
-        + r"\nu_{"
-        + flavor_string
-        + r"} + \bar\nu_{"
-        + flavor_string
-        + r"} \textmd{GR}$"
+        f"ν_{flavor}"
+        + f" + ν̄_{flavor}"
+        + " GR"
     )
     particle_key = "2nu" + flavor
     particle_mask = particle_masks[particle_key]
