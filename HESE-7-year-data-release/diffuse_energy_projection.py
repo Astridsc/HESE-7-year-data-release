@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.style
 
-matplotlib.style.use("./resources/mpl/paper.mplstyle")
+#matplotlib.style.use("./resources/mpl/paper.mplstyle")
 from matplotlib.font_manager import FontProperties
 import scipy.stats
 

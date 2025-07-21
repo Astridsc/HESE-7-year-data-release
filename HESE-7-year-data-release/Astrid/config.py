@@ -1,18 +1,16 @@
 # Livetime constant
+LIVETIME0 = 227708167.68  # The exact number of seconds for the 7.5 year run
 LIVETIME1 = 7.5 * 365 * 24 * 3600  # 7.5 years in seconds
 LIVETIME2 = 10 * 365 * 24 * 3600  # 10 years in seconds
 LIVETIME3 = 15 * 365 * 24 * 3600  # 15 years in seconds
 
 # File paths
 MC_FILENAMES = [
-    "./resources/data/HESE_mc_observable.json",
-    "./resources/data/HESE_mc_flux.json",
-    "./resources/data/HESE_mc_truth.json",
+    "/home/astridaurora/HESE-7-year-data-release/HESE-7-year-data-release/resources/data/HESE_mc_observable.json",
+    "/home/astridaurora/HESE-7-year-data-release/HESE-7-year-data-release/resources/data/HESE_mc_flux.json", 
+    "/home/astridaurora/HESE-7-year-data-release/HESE-7-year-data-release/resources/data/HESE_mc_truth.json",
 ]
-FLUX_FILE_6 = "./resources/data/flux_Fig6.csv"
-FLUX_FILE_8 = "./resources/data/flux_Fig8.csv"
-MC_GEN1_FILE = "./resources/data/mc_Gen1.csv"
-MC_GEN2_FILE = "./resources/data/mc_Gen2.csv"
+
 
 # Parameter names
 PARAMETER_NAMES = [
@@ -30,14 +28,14 @@ PARAMS = np.array(
         -0.05309302,
         0.99815326,
         1.000683,
-        2.9,
+        2.87375956,
         6.36488608,
         1.00621679,
         0.95192328,
         -0.0548763,
         1.18706341,
         1.00013744,
-        0.0,
+        0.00000000,   # Actual value is 0.0 but to avoid complications in get_weights
     ]
 )
 

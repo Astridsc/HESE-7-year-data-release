@@ -180,6 +180,7 @@ class Weighter:
 
         # Calculate the muon weights
         muon_weights = self.weight_muon(self.mc, muon_norm=muon_norm)
+        #print('muon_weights', muon_weights)
 
         # Correct atmospheric weights with self-veto
         conv_fluxes = ad.mul(conv_fluxes, self.mc["conventionalSelfVetoCorrection"])
@@ -204,6 +205,9 @@ class Weighter:
                 epsilon_dom, epsilon_head_on, anisotropy_scale
             ),
         )
+        #print('astro_weights', astro_weights)
+        #print('conv_weights', conv_weights)
+        #print('prompt_weights', prompt_weights)
 
         neutrino_flux = ad.plus_grad(
             astro_weights, ad.plus_grad(conv_weights, prompt_weights)

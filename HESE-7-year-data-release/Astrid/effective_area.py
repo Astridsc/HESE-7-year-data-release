@@ -50,7 +50,7 @@ def HESE_effective_areas(json_files=MC_FILENAMES, energy_bins=np.logspace(2, 7, 
     interactionType = np.array(json_data["interactionType"])
     primaryType = np.array(json_data["primaryType"])
 
-     # Get some masks that correspond to our chosen energy bins
+    # Get some masks that correspond to our chosen energy bins
     nu_energy_mapping = np.digitize(primaryEnergy, bins=energy_bins) - 1
     nu_energy_masks = [nu_energy_mapping == i for i in range(len(energy_bins) - 1)]
 
@@ -107,6 +107,7 @@ def HESE_effective_areas(json_files=MC_FILENAMES, energy_bins=np.logspace(2, 7, 
         particle_key = "2nu" + flavor
         particle_mask = particle_masks[particle_key]
         masks = np.logical_and(particle_mask[None, :], nu_energy_masks)
+        #print(f"masks shape for {flavor}:", np.array(masks).shape)
         # The factor of 0.5 is needed so that we compute the average
         # neutrino/antineutrino effective area. This is in contrast to the
         # effective area plot (FIG. 33) in PhysRevD.104.022002 which plots the
@@ -119,6 +120,8 @@ def HESE_effective_areas(json_files=MC_FILENAMES, energy_bins=np.logspace(2, 7, 
     for eff_ in eff:
         eff_ = [2*x for x in eff_]    #  Double the effective area to account for particle/antiparticle
     
+    print("Final eff shape:", np.array(eff).shape)
+    #print("Final eff_err shape:", np.array(eff_err).shape)
     # Oklart hur göra med eff_err
     return eff, eff_err
 
@@ -142,8 +145,9 @@ def get_effective_area_range(eff, Edep, gen2=True):
         Energy bins corresponding to the effective area.
     """
     # Original energy bins as seen in the effective area plots by HESE
-    energy_bins = np.logspace(2, 7, 5 * 20)  # Original energy bins
+    energy_bins = np.logspace(2, 7, 5 * 20 + 1)  # Original energy bins
 
+    energy_bins = energy_bins[1:]
     emin, emax = Edep[0], Edep[-1]
 
     # Filter energy bins within the range of Edep
@@ -177,9 +181,20 @@ def get_effective_area_range(eff, Edep, gen2=True):
 def get_effective_area_dataframe(Edep, gen2=True):
     # Compute limited/extrapolated effective area and energy bins 
     eff, eff_err = HESE_effective_areas()
+    print("eff shape:", np.asarray(eff).shape)
+    
     eff_new_range, energy_bins_new = get_effective_area_range(eff, Edep, gen2=gen2)
+    print("eff_new_range shape:", np.asarray(eff_new_range).shape)
+    print("energy_bins_new shape:", energy_bins_new.shape)
+    
+    # Convert bin edges to centers
+    energy_bins_new = np.concatenate(([Edep[0]], energy_bins_new))
+    energy_centers = bin_edges_to_centers(energy_bins_new)
+    
     eff_new_range = np.asarray(eff_new_range)
-    eff_df = pd.DataFrame(eff_new_range.T, index=energy_bins_new, columns=['nu_e', 'nu_mu', 'nu_tau'])
+    
+    eff_df = pd.DataFrame(eff_new_range.T, index=energy_centers, columns=['nu_e', 'nu_mu', 'nu_tau'])
+    print("eff_df shape:", eff_df.shape)
     return eff_df
 
 
@@ -189,8 +204,14 @@ def total_events(flx, eff, livetime, norm, delta_E, save_to_csv=False):
     {col: interp1d(flx.index, flx[col], bounds_error=False, fill_value="extrapolate")(eff.index)
      for col in flx.columns},
     index=eff.index)
+    
 
     total_events_df = flx_interpolated * eff * livetime * norm 
+    if total_events_df.index.min() < 0:
+        print('total_events_df.index.min() < 0')
+        negative_mask = total_events_df < 0
+        total_events_df[negative_mask] = 0
+        
     #total_events_df = flx * eff_interpolated * livetime
     total_events_df['total_events'] = delta_E * (total_events_df['nu_e'] + total_events_df['nu_mu'] + total_events_df['nu_tau'])
     #total_events_df.index = eff.index 
@@ -201,31 +222,6 @@ def total_events(flx, eff, livetime, norm, delta_E, save_to_csv=False):
     return total_events_df
 
 
-def rebinning_old(total_events, Edep):
-    # Same procedure as used by HESE
-    emin, emax = Edep[0], Edep[-1]
-    nbins = len(Edep)
-    width = (np.log10(emax) - np.log10(emin)) / nbins
-    e_edges, _, _ = binning.get_bins(emin, emax, ewidth=width, eedge=emin)
-    bin_centers = 10.0 ** (0.5 * (np.log10(e_edges[:-1]) + np.log10(e_edges[1:]))) # Oklart varför dom börjar med index 1 istället för 0
-
-    # Group data into logarithmic bins
-    total_events_binned = total_events.groupby(pd.cut(total_events.index, bin_centers, include_lowest=True)).sum()
-    #total_events_binned = pd.cut(total_events['total'], e_edges, include_lowest=True)
-    #print('total_events_binned: ', total_events_binned)
-
-    # Compute the midpoint (center) of each logarithmic interval
-    # Geometric mean for log step midpoints
-    total_events_binned['interval_center'] = [
-        (interval.left * interval.right) ** 0.5 for interval in total_events_binned.index
-    ]
-    #total_events_binned.index = total_events_binned['interval_center']
-    #total_events_binned['interval_center'] = bin_centers
-
-    return total_events_binned
-
-
-
 def bin_centers_to_edges(bin_centers):
     log_centers = np.log10(bin_centers)
     dlog = np.diff(log_centers)
@@ -234,6 +230,14 @@ def bin_centers_to_edges(bin_centers):
     log_edges[0] = log_centers[0] - dlog[0]/2
     log_edges[-1] = log_centers[-1] + dlog[-1]/2
     return 10**log_edges
+
+
+def bin_edges_to_centers(bin_edges):
+    log_edges = np.log10(bin_edges)
+    dlog = np.diff(log_edges)
+    log_centers = np.zeros(len(bin_edges) - 1)
+    log_centers = (log_edges[:-1] + log_edges[1:]) / 2
+    return 10**log_centers
 
 
 def rebinning(total_events, Edep):
@@ -273,70 +277,117 @@ def apply_energy_smearing(energies, events, resolution):
     Returns:
         smeared_events (np.ndarray): The smeared event distribution.
     """
-    smeared_events = np.zeros_like(events)  # Initialize array for smeared events
-    
-    #bin_width = energies[1] - energies[0]  # Assuming uniform binning
-    #bin_widths = np.diff(energies)  # Calculate bin widths for non-uniform bins
+    smeared_events = np.zeros_like(events)  
     
     for i, E_true in enumerate(energies):
-        # Gaussian width depends on resolution and energy
-        logE = np.log10(energies)
-        logE_true = np.log10(E_true)
-        sigma_log = resolution  # Now resolution is fractional in log10(E)
-        gaussian = np.exp(-0.5 * ((logE - logE_true) / sigma_log) ** 2)
-        #sigma = resolution * E_true  
-        #gaussian = np.exp(-0.5 * ((energies - E_true) / sigma) ** 2)
-
+        # Calculate sigma in linear space (resolution is fractional)
+        sigma = resolution * E_true
+        
+        # Create Gaussian in linear space
+        gaussian = np.exp(-0.5 * ((energies - E_true) / sigma) ** 2)
+        
+        # Normalize the Gaussian
         gaussian_sum = np.sum(gaussian)
-        gaussian /= gaussian_sum  # Normalize Gaussian for proper redistribution
-
-        # Redistribute current bin's events according to the Gaussian
+        if gaussian_sum > 0:  # Avoid division by zero
+            gaussian /= gaussian_sum
+        
+        # Redistribute events
         smeared_events += events[i] * gaussian
-        if i == 0 or i == len(energies)-1:
-            print(f"Edge bin {i}: gaussian sum = {gaussian_sum}")
+    
+    # Verify event conservation
+    total_events_before = np.sum(events)
+    total_events_after = np.sum(smeared_events)
+    if not np.isclose(total_events_before, total_events_after, rtol=1e-10):
+        print(f"Warning: Event conservation violated! Before: {total_events_before}, After: {total_events_after}")
     
     return smeared_events
-# Check code is normalized to 1 for the gaussian 
-# check for different sigmas/resolution 
 
 
-def bin_weights(mc, weights, e_edges):
+def test_energy_smearing():
     """
-    Bin the MC events and their weights according to energy bins.
-
-    Parameters:
-        mc: dict or DataFrame with key 'recoDepositedEnergy'
-        weights: array-like, weights for each event
-        e_edges: array-like, bin edges for deposited energy
-        bin_centers: array-like, bin centers for deposited energy
-
-    Returns:
-        pd.DataFrame: DataFrame with columns ['bin_center', 'sum_weights', 'n_events']
+    Test function to verify the energy smearing implementation.
     """
-    # Get deposited energies and weights
-    energies = mc['recoDepositedEnergy']
-    weights = np.asarray(weights)
+    # Test 1: Single peak
+    energies = np.logspace(4, 7, 100)
+    events = np.zeros_like(energies)
+    events[50] = 1000  # All events in one bin
+    
+    smeared = apply_energy_smearing(energies, events, resolution=0.1)
+    
+    # Verify event conservation
+    assert np.isclose(np.sum(events), np.sum(smeared), rtol=1e-10), "Event conservation failed"
+    
+    # Test 2: Multiple peaks
+    events = np.zeros_like(energies)
+    events[30] = 500  # First peak
+    events[70] = 500  # Second peak
+    
+    smeared = apply_energy_smearing(energies, events, resolution=0.1)
+    
+    # Verify event conservation
+    assert np.isclose(np.sum(events), np.sum(smeared), rtol=1e-10), "Event conservation failed"
+    
+    # Test 3: Resolution dependence
+    smeared_high_res = apply_energy_smearing(energies, events, resolution=0.2)
+    smeared_low_res = apply_energy_smearing(energies, events, resolution=0.05)
+    
+    # Calculate spread in linear space
+    high_res_spread = np.sqrt(np.average((energies - np.average(energies, weights=smeared_high_res))**2, weights=smeared_high_res))
+    low_res_spread = np.sqrt(np.average((energies - np.average(energies, weights=smeared_low_res))**2, weights=smeared_low_res))
+    
+    # Higher resolution should result in more spread
+    assert high_res_spread > low_res_spread, "Resolution effect not working as expected"
+    
+    print("All energy smearing tests passed!")
 
-    # Bin the weights: sum weights in each energy bin
-    sum_weights, _ = np.histogram(energies, bins=e_edges, weights=weights)
-    n_events, _ = np.histogram(energies, bins=e_edges)
-    #print(len(e_edges), len(bin_centers))
-    print(len(sum_weights), len(n_events), len(e_edges))
 
-    # Build DataFrame
-    df = pd.DataFrame({
-        'edges': e_edges[1:],
-        'sum_weights': sum_weights,
-        'total_events': n_events
-    })
+def visualize_energy_smearing():
     """
-    print('length of e_edges', len(e_edges))
-    print('length of sum_weights', len(sum_weights))
-    print('length of n_events', len(n_events))
-    df = pd.DataFrame({
-        'edges': e_edges[:-1],
-        'sum_weights': sum_weights,
-        'total_events': n_events
-    })"""
+    Create visualizations to verify the energy smearing behavior.
+    """
+    import matplotlib.pyplot as plt
+    
+    # Create test data
+    energies = np.logspace(4, 7, 100)
+    events = np.zeros_like(energies)
+    events[50] = 1000  # Single peak
+    
+    # Apply smearing with different resolutions
+    smeared_10 = apply_energy_smearing(energies, events, resolution=0.1)
+    smeared_20 = apply_energy_smearing(energies, events, resolution=0.2)
+    smeared_05 = apply_energy_smearing(energies, events, resolution=0.05)
+    
+    # Plot results
+    plt.figure(figsize=(10, 6))
+    plt.step(energies, events, where='mid', label='Original', color='black')
+    plt.step(energies, smeared_05, where='mid', label='5% resolution', color='blue', alpha=0.7)
+    plt.step(energies, smeared_10, where='mid', label='10% resolution', color='red', alpha=0.7)
+    plt.step(energies, smeared_20, where='mid', label='20% resolution', color='green', alpha=0.7)
+    
+    plt.xscale('log')
+    plt.xlabel('Energy [GeV]')
+    plt.ylabel('Number of events')
+    plt.title('Energy Smearing Test')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.show()
+    
+    # Test with multiple peaks
+    events = np.zeros_like(energies)
+    events[30] = 500  # First peak
+    events[70] = 500  # Second peak
+    
+    smeared_10 = apply_energy_smearing(energies, events, resolution=0.1)
+    
+    plt.figure(figsize=(10, 6))
+    plt.step(energies, events, where='mid', label='Original', color='black')
+    plt.step(energies, smeared_10, where='mid', label='Smeared (10% resolution)', color='red', alpha=0.7)
+    
+    plt.xscale('log')
+    plt.xlabel('Energy [GeV]')
+    plt.ylabel('Number of events')
+    plt.title('Energy Smearing Test - Multiple Peaks')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.show()
 
-    return df

@@ -17,68 +17,53 @@ import numpy as np
 import json
 #import binning
 
-import effective_area
+from Astrid import effective_area
 
-df = pd.read_csv('HESE12_events.csv', index_col=0)
+def plot_HESE12():
+    df_12 = pd.read_csv('Astrid/HESE12_events.csv', index_col=0)
+    df_7 = pd.read_csv('Astrid/HESE_data.csv', index_col=0)
 
+    energies = df_12['energy']
+    energies_7 = df_7['recoDepositedEnergy']
 
+    bins = np.logspace(4, 7, 15)
+    counts, bin_edges = np.histogram(energies, bins=bins)
 
-energies = df['energy']
+    # Bin centers
+    #bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+    bin_centers = effective_area.bin_edges_to_centers(bin_edges)
 
+    # Poisson error bars (sqrt(N))
+    errors = np.sqrt(counts)
 
-bins = np.logspace(4, 7, 15)
-counts, bin_edges = np.histogram(energies, bins=bins)
-
-# Bin centers
-bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
-
-# Poisson error bars (sqrt(N))
-errors = np.sqrt(counts)
-
-plt.errorbar(
-    bin_centers, counts, yerr=errors, fmt='x', color='blue', label='Events',
-    capsize=3, markersize=8, linestyle='none'
-)
-plt.xscale('log')
-plt.xlabel('Energy [GeV]')
-plt.ylabel('Number of events')
-plt.title('HESE12 Event Distribution (Crosses)')
-plt.legend()
-plt.show()
-
-
-
+    plt.errorbar(
+        bin_centers, counts, yerr=errors, fmt='x', color='blue', label='Events',
+        capsize=3, markersize=8, linestyle='none'
+    )
+    plt.xscale('log')
+    plt.xlabel('Energy [GeV]')
+    plt.ylabel('Number of events')
+    plt.title('HESE12 Event Distribution (Crosses)')
+    plt.legend()
+    plt.show()
 
 
+def plot_morph_hist():
+    df_12 = pd.read_csv('Astrid/HESE12_events.csv', index_col=0)
+    #df_7 = pd.read_csv('Astrid/HESE_data.csv', index_col=0)
 
+    energies = df_12['energy']
+    morph = df_12['event_morphology']
 
+    track_energies = energies[morph == 'Track']
+    print(f"Number of track events: {len(track_energies)}")
+    shower_energies = energies[morph == 'Shower']
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-"""energies = events_df['energy']
-morph = events_df['event_morphology']
-
-track_energies = energies[morph == 'Track']
-print(f"Number of track events: {len(track_energies)}")
-shower_energies = energies[morph == 'Shower']
-
-shower_events, bin2, patches2 = plt.hist(shower_energies, bins=np.logspace(4, 7, 25), color='orange', alpha=0.5, label='Shower events')
-track_events, bins1, patches1 = plt.hist(track_energies, bins=np.logspace(4, 7, 25), color='blue', alpha=0.5, label='Track events')
-plt.xlabel('Energy [GeV]')
-plt.ylabel('Number of events')
-plt.xscale('log')
-plt.title('HESE12 Event Distribution')
-plt.legend()
-plt.show()"""
+    shower_events, bin2, patches2 = plt.hist(shower_energies, bins=np.logspace(4, 7, 25), color='orange', alpha=0.5, label='Shower events')
+    track_events, bins1, patches1 = plt.hist(track_energies, bins=np.logspace(4, 7, 25), color='blue', alpha=0.5, label='Track events')
+    plt.xlabel('Energy [GeV]')
+    plt.ylabel('Number of events')
+    plt.xscale('log')
+    plt.title('HESE12 Event Distribution')
+    plt.legend()
+    plt.show()

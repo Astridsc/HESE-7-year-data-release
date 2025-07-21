@@ -24,10 +24,8 @@ import binning
 
 from Astrid.config import MC_FILENAMES
 from Astrid.config import LIVETIME1, LIVETIME2, LIVETIME3
-from Astrid.config import FLUX_FILE_6, FLUX_FILE_8, MC_GEN1_FILE, MC_GEN2_FILE
-#from Astrid.config import LIVETIME1, LIVETIME2, LIVETIME3, FLUX_FILE, MC_FILENAMES 
-from Astrid.data_processing import load_true_events, get_particle_masks, get_weights, load_flux_data
-from Astrid.effective_area import get_effective_area_range, rebinning, total_events, bin_weights, rebinning_old
+from Astrid.data_processing import load_true_events, get_particle_masks, get_weights, get_data
+from Astrid.effective_area import get_effective_area_range, rebinning, total_events
 from Astrid.effective_area import apply_energy_smearing, HESE_effective_areas, get_effective_area_dataframe
 
 #outdir = "./effective_areas/"
@@ -49,6 +47,7 @@ def bin_centers_to_edges(bin_centers):
     log_edges[0] = log_centers[0] - dlog[0]/2
     log_edges[-1] = log_centers[-1] + dlog[-1]/2
     return 10**log_edges
+
 
 
 def test_smearing():
@@ -76,17 +75,17 @@ def plot_fig6():
     livetime = 227708167.68 # Used by HESE taking into account some breaks in the runtime
 
     Edep = np.logspace(4, 7, num=3*20+1)
+    Edep_new_binning = np.logspace(4, 7, num=27)
     eff_df = get_effective_area_dataframe(Edep, gen2=False)
     print('eff_df: ', eff_df)
 
     # Get flux from nuSIprop
     flx_df = pd.read_csv('Astrid/flux/flux_Fig6.csv', index_col=0)
     flx_df.index = flx_df.index / 1e9    # Convert to [GeV]
+    bin_centers = flx_df.index.values
+    bin_edges = bin_centers_to_edges(bin_centers)
+    delta_E = np.diff(bin_edges)
 
-    delta_E = np.diff(flx_df.index.values)
-    delta_E = np.append(delta_E, delta_E[-1])  # Append last value to match length
-
-    # Get total events from total_events = flx_interpolated * eff
     total_events_df = total_events(eff=flx_df, flx=eff_df, livetime=livetime, norm=norm, delta_E=delta_E, save_to_csv=False)
 
     # Apply energy smearing
@@ -99,23 +98,51 @@ def plot_fig6():
 
     total_events_df['with_resolution'] = smeared_events
     print('total_events_df: ', total_events_df)
+    plt.hist(
+            np.asarray(total_events_df.index), 
+             weights=total_events_df['with_resolution'], 
+             bins=Edep_new_binning, label='Total Events (with resolution)', 
+             histtype='bar', 
+             color='blue')
 
     # Compute the total events with the right amount of bins
-    Edep_new_binning = np.logspace(4, 7, num=27)
     total_events_df = rebinning(total_events_df, Edep_new_binning)
 
     N_tot = total_events_df['total_events']
     N_tot_res = total_events_df['with_resolution']
-    energies = total_events_df['interval_center'] 
+    #energies = total_events_df['interval_center'] 
+    energies = np.asarray(total_events_df.index)
 
-    bin_centers = energies.values
-    e_edges = bin_centers_to_edges(bin_centers=bin_centers)
+    #bin_centers = energies.values
+    #e_edges = bin_centers_to_edges(bin_centers=energies)
 
     # Get the HESE MC events for given energy range & bins
-    mc, weights = get_weights(Edep_new_binning, livetime=livetime, gen2=False)
-    df_binned = bin_weights(mc, weights[0], e_edges)
+    #mc, weights = get_weights(Edep_new_binning, livetime=livetime, gen2=False)
+    #df_binned = bin_weights(mc, weights[0], e_edges)
 
     #plt.step(df_binned['edges'], df_binned['sum_weights'], label='HESE mc, ', color='b')
+    
+    
+    mc, weights = get_weights(Edep_new_binning, livetime=livetime, gen2=False)
+    #mc_binned = bin_weights(mc, weights[0], e_edges=e_edges)
+    #print(len(bin_centers), len(e_edges))
+    
+    mc_df = pd.DataFrame({
+        'recoDepositedEnergy': mc['recoDepositedEnergy'],
+        'weights': np.asarray(weights[0]),
+    })
+    
+    mc_df.set_index('recoDepositedEnergy', inplace=True)
+    print('len of mc_df: ', len(mc_df))
+    print('mc_df: ', mc_df)
+    
+    mc_df = rebinning(mc_df, Edep_new_binning)
+    smeared_events_mc = apply_energy_smearing( 
+        energies=np.asarray(mc_df.index), 
+        events=np.asarray(mc_df['weights']), 
+        resolution=res)
+    
+    mc_df['with_resolution'] = smeared_events_mc
 
     plt.step(energies, N_tot, label='Without resolution', color='lightgrey')
     plt.step(energies, N_tot_res, label='With resolution' + r'$\gamma$= 2.0' + ', ' + r'$R$= ' + str(res), color='purple')
@@ -123,7 +150,7 @@ def plot_fig6():
     plt.hist(
         [mc["recoDepositedEnergy"]],
         weights=weights,
-        bins=bin_centers,
+        bins=energies,
         histtype="step",
         stacked=True,
         label='No ' + r'$\nu SI$',
@@ -146,70 +173,7 @@ def plot_fig6():
 
 
 
-def plot_fig8():
-
-    norm = 1e-10    # Lite oklart med normalisering?..
-    Edep = np.logspace(5, 8, num=3*20+1)
-
-    # Get the effective area as originally provided by HESE (1e4 to 1e7), [m2]
-    eff, eff_err = plot_effective_areas() 
-
-    # Compute limited/extrapolated effective area and energy bins 
-    eff_new, energy_bins_new = get_effective_area_range(eff, Edep, gen2=True)
-    eff_new = np.asarray(eff_new)
-
-    # Set up pandas dataframes
-    eff_df = pd.DataFrame(eff_new.T, index=energy_bins_new, columns=['nu_e', 'nu_mu', 'nu_tau'])
-    eff_df.to_csv('effective_areas_by_flavor.csv')
-
-    flx_df = pd.read_csv('Astrid/flux/flux_Fig8.csv', index_col=0)
-    flx_df.index = flx_df.index / 1e9    # Convert to [GeV]
-
-    # Compute the total events with the right amount of bins
-    #total_events_df, e_edges = rebinning(flx_df, eff_df, nbins=30)
-    #total_events_df = pd.read_csv('Total_events.csv')
-    #total_events_df = total_events(flx_df, eff_df, save_to_csv=False)
-    total_events_df = total_events(flx_df, eff_df, save_to_csv=False)
-    print('len of total events flx interpolated as eff ', len(total_events_df))
-
-    energies = np.asarray(total_events_df.index)
-    events = np.asarray(total_events_df['total'])
-    resolution = 0.1  # Detector resolution of 10%
-
-    # Apply energy smearing
-    smeared_events = apply_energy_smearing(energies, events, resolution)
-    total_events_df['with_resolution'] = smeared_events
-    #print(total_events_df)
-
-    # Compute the total events with the right amount of bins
-    Edep = np.logspace(5, 8, num=30)
-    total_events_df = rebinning(total_events_df, Edep)
-    #total_events_df.to_csv('Total_events_Fig8.csv')
-
-    N_tot = total_events_df['total']
-    N_tot_res = total_events_df['with_resolution']
-    energies = total_events_df['interval_center']
-
-    #fig, ax = plt.subplots()
-
-    plt.step(energies, norm* LIVETIME2 *N_tot_res, label='With resolution')
-    plt.step(energies, norm*LIVETIME2*N_tot, label='Without resolution')
-    #plt.step(energies, eff_df['nu_e'], label='Effective area [m2], nu_e', color='g')
-
-
-    plt.xlim(200.0e3, 1e8)
-    #plt.ylim(1.0e-2, 1.0e2)
-    plt.yscale('log')
-    plt.xscale('log')
-    plt.xlabel('Energy [GeV]')
-    plt.ylabel('Number of events')
-    plt.title('IceCube-Gen2')
-    plt.legend()
-    plt.show()
-
-
-
-def plot_Fig8():
+def plot_Fig8_mc():
     norm = (1/5) * 1e-12    # Lite oklart med normalisering?..
 
     # Get the effective area as originally provided by HESE (1e4 to 1e7), [m2]
@@ -218,6 +182,7 @@ def plot_Fig8():
 
     flx_df = pd.read_csv('Astrid/flux/flux_Fig8_si2.csv', index_col=0)
     flx_df.index = flx_df.index / 1e9    # Convert to [GeV]
+    
 
     delta_E = np.diff(flx_df.index.values)
     delta_E = np.append(delta_E, delta_E[-1])  # Append last value to match length
@@ -264,6 +229,11 @@ def plot_Fig8():
     print('len of mc_df: ', len(mc_df))
     print('mc_df: ', mc_df)
     mc_df = rebinning(mc_df, Edep_new)
+    smeared_events_mc = apply_energy_smearing( 
+        energies=np.asarray(mc_df.index), 
+        events=np.asarray(mc_df['weights']), 
+        resolution=res)
+    mc_df['with_resolution'] = smeared_events_mc
 
 
     fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(7, 9),
@@ -271,9 +241,116 @@ def plot_Fig8():
     
     ax1.step(energies, total_events_df['total_events'], label='Without resolution', color='lightgrey', linestyle='dashed')
     ax1.step(energies, total_events_df['with_resolution'], label=r'$\gamma$=2.0 '+', R='+str(res), color='r')
-    ax1.step(Edep_new[1:], mc_df['weights'], label='HESE mc', color='b')
+    ax1.step(Edep_new[1:], mc_df['with_resolution'], label='HESE mc with resolution', color='b')
 
     cm = plt.get_cmap("magma")
+    ax1.hist(
+        [mc["recoDepositedEnergy"]],
+        weights=weights,
+        bins=energies,
+        histtype="bar",
+        stacked=True,
+        label='No ' + r'$\nu SI$, ' + r'$\gamma$= 2.9',
+        color=cm(0.75),
+    )
+
+    # Plotting and computing histogram for the detector sensitivity.
+    # Compute histograms for both distributions with the SAME bins
+    mc_hist, _ = np.histogram(mc["recoDepositedEnergy"], bins=energies, weights=weights[0])
+    #mc_hist, _ = np.histogram(mc_df["recoDepositedEnergy"], bins=energies, weights=mc_df['with_resolution'])
+    flx_hist, _ = np.histogram(energies, bins=energies, weights=total_events_df['with_resolution'])
+
+    # Remove zero values in `flx_hist` to avoid division by zero during normalization
+    nonzero = flx_hist > 0
+    mc_hist = mc_hist[nonzero]
+    flx_hist = flx_hist[nonzero]
+
+    # Compute normalized difference
+    normalized_diff = (flx_hist - mc_hist) / np.sqrt(flx_hist)
+
+    ax2.hist(
+        energies[:-1][nonzero],  # Bin centers corresponding to non-zero elements
+        bins=energies,
+        weights=normalized_diff,
+        histtype="step",
+        label=r"Normalized Difference",
+        color="b",
+    )
+
+    ax1.loglog()
+    plt.xlim(2*Edep[0], Edep[-1])
+    ax1.set_ylim(4*1.0e-1, 1.0e2)
+    ax1.set_ylabel("Number of events")
+    ax1.yaxis.set_ticks_position('both')      # Show ticks on both left and right
+    ax1.tick_params(axis='y', which='both', right=True, labelright=False)  # Enable right ticks, hide right labels
+    ax1.grid(True, which='both', axis='both', alpha=0.3, color='lightgrey')
+    ax1.set_title("IceCube Gen2, 10 years livetime")
+    ax1.legend()
+    ax2.set_ylim(-5, 5)
+    ax2.set_ylabel(r'$\Delta N/\sqrt{\Delta N_{\nu SI}}$')
+    ax2.set_xlabel(r"$E_{dep} [GeV]$")
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0.2)
+    plt.show()
+
+
+
+
+def plot_Fig8_data():
+    norm = (1/5) * 1e-12    # Lite oklart med normalisering?..
+
+    # Get the effective area as originally provided by HESE (1e4 to 1e7), [m2]
+    Edep = np.logspace(4, 7, num=3*20+1)
+    eff_df = get_effective_area_dataframe(Edep, gen2=True)
+
+    flx_df = pd.read_csv('Astrid/flux/flux_Fig8_si2.csv', index_col=0)
+    flx_df.index = flx_df.index / 1e9    # Convert to [GeV]
+
+    delta_E = np.diff(flx_df.index.values)
+    delta_E = np.append(delta_E, delta_E[-1])  # Append last value to match length
+
+    # Compute the total events
+    total_events_df = total_events(eff=flx_df, flx=eff_df, livetime=LIVETIME2, norm=norm, delta_E=delta_E, save_to_csv=False)
+    print('total_events_df: ', total_events_df)
+    print('length of total events: ', len(total_events_df))
+
+    # Apply Gaussian energy smearing with 10% resolution
+    res=0.1
+    smeared_events = apply_energy_smearing( 
+        energies=np.asarray(total_events_df.index), 
+        events=np.asarray(total_events_df['total_events']), 
+        resolution=res)
+    total_events_df['with_resolution'] = smeared_events
+
+    # Compute the total events with the right amount of bins
+    Edep_new = np.logspace(4, 7, num=24)
+    #total_events_df = rebinning(total_events_df, Edep_new)
+    #energies = np.asarray(total_events_df.index)
+    print('total_events_df: ', total_events_df)
+
+    # Getting HESE data events for given energy range & bins
+    data = get_data(Edep_new)
+    print('length of data: ', len(data))
+    print('max recoDepositedEnergy: ', data['recoDepositedEnergy'].max())
+    print(data)
+    #data_binned = rebinning(data, Edep_new)
+    plt.hist(data['recoDepositedEnergy'], bins=Edep_new)
+    plt.hist(total_events_df['with_resolution'], bins=Edep_new)
+    plt.xscale('log')
+    plt.xlim(6*Edep[0], Edep[-1])
+    #plt.yscale('log')
+    plt.xlabel('Energy [GeV]')
+    plt.ylabel('Number of events')
+    plt.show()
+
+    """fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(7, 9),
+                            gridspec_kw={'height_ratios': [3, 1]}, sharex=True)"""
+    
+    #ax1.step(Edep, total_events_df['total_events'], label='Without resolution', color='lightgrey', linestyle='dashed')
+    #ax1.step(energies, total_events_df['with_resolution'], label=r'$\gamma$=2.0 '+', R='+str(res), color='r')
+    #ax1.step(Edep_new[1:], mc_df['weights'], label='HESE mc', color='b')
+
+    """cm = plt.get_cmap("magma")
     ax1.hist(
         [mc["recoDepositedEnergy"]],
         weights=weights,
@@ -320,7 +397,8 @@ def plot_Fig8():
     ax2.set_xlabel(r"$E_{dep} [GeV]$")
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.2)
-    plt.show()
+    plt.show()"""
+
 
 
 def test_binning():
@@ -337,6 +415,7 @@ def test_binning():
     print(df_binned)
 
 
+
 def test_rebinning_old():
     df = pd.DataFrame({
         'col1': np.logspace(4, 7, num=300),
@@ -349,6 +428,7 @@ def test_rebinning_old():
     df_binned = rebinning_old(df, E_dep)
     print('Binned DataFrame:')
     print(df_binned)
+
 
 
 def mockdata():
@@ -418,8 +498,8 @@ def mockdata():
         })
     mc_df1.set_index('Edep', inplace=True)
     mc_df2.set_index('Edep', inplace=True)
-    mc_events_binned1 = rebinning(mc_df1, Edep1)
-    mc_events_binned2 = rebinning(mc_df2, Edep2)
+    mc_events_binned1 = rebinning(mc_df1, energies1)
+    mc_events_binned2 = rebinning(mc_df2, energies2)
     
     print('mc_df1: ', mc_events_binned1)
     print('mc_df2: ', mc_events_binned2)
@@ -427,7 +507,6 @@ def mockdata():
     mc_events_binned2.to_csv('mc_Gen2.csv')
     print(len(mc_events_binned1), len(eff1))
     print(len(mc_events_binned2), len(eff2))
-
 
 
 
