@@ -52,7 +52,7 @@ def load_hese_data():
     """
     Load the HESE data.
     """
-    data = json.load(open('resources/data/HESE_data.json', 'r'))
+    data = json.load(open(os.path.join(base_path, '../resources/data/HESE_data.json'), 'r'))
     data_df = pd.DataFrame(data)
     data_df.to_csv('HESE_data.csv')
     return data_df
@@ -70,7 +70,7 @@ def fig8_new():
     eff_df = get_effective_area_dataframe(energy_bins, gen2=True)
 
     # Get nuSIprop flux data
-    flx_df = pd.read_csv('Astrid/flux/flux_Fig8_600bins.csv', index_col=0)
+    flx_df = pd.read_csv(os.path.join(base_path, 'flux/flux_Fig8_600bins.csv'), index_col=0)
     flx_df.index = flx_df.index / 1e9    # Convert to [GeV]
 
     bin_centers = flx_df.index.values
@@ -189,7 +189,7 @@ def fig6_new():
 
     # Get nuSIprop flux data
     # Index = bin centers
-    flx_df = pd.read_csv('Astrid/flux/flux_Fig6_600bins.csv', index_col=0)
+    flx_df = pd.read_csv(os.path.join(base_path, 'flux/flux_Fig6_600bins.csv'), index_col=0)
     flx_df.index = flx_df.index / 1e9    # Convert to [GeV]
     bin_centers = flx_df.index.values
     bin_edges = bin_centers_to_edges(bin_centers)
@@ -200,7 +200,7 @@ def fig6_new():
     
     total_events_df = total_events(flx=eff_df, eff=flx_df, norm=0.8*1e-13, livetime=livetime, delta_E=delta_E)
     # Get MC events using the updated save_mc_histograms function
-    mc_df = get_mc_histogram(Edep=energy_bins_new, livetime=livetime, gen2=False,save=False)
+    mc_df = get_mc_histogram(Edep=energy_bins_new, livetime=livetime, gen2=False, save=False)
     print(f"mc_df: {mc_df}")
     mc_df.set_index('energy', inplace=True)
     
@@ -318,7 +318,7 @@ def fig6_morphologies():
     eff_df = get_effective_area_dataframe(energy_bins)
 
     # Get nuSIprop flux data
-    flx_df = pd.read_csv('Astrid/flux/flux_Fig6_600bins.csv', index_col=0)
+    flx_df = pd.read_csv(os.path.join(base_path, 'flux/flux_Fig6_600bins.csv'), index_col=0)
     flx_df.index = flx_df.index / 1e9    # Convert to [GeV]
 
     bin_centers = flx_df.index.values

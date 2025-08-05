@@ -161,7 +161,7 @@ class SysWeighter:
             raise ValueError("flux_component must be either Astro, Conv, or Prompt")
 
         spline_filename = (
-            "./resources/splines/"
+            "resources/splines/"
             + systematic_string
             + flux_component_string
             + "_"

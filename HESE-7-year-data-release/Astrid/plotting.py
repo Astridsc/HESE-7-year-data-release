@@ -7,7 +7,7 @@ sys.path.insert(0, base_path + "/resources/external/")
 import matplotlib
 import matplotlib.style
 matplotlib.use("TkAgg")
-matplotlib.style.use("./resources/mpl/paper.mplstyle")
+#matplotlib.style.use("./resources/mpl/paper.mplstyle")
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 from matplotlib.collections import LineCollection

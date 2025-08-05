@@ -31,7 +31,7 @@ def center(x):
     return (x[1:] + x[:-1]) / 2.0
 
 
-def HESE_effective_areas(json_files=MC_FILENAMES, energy_bins=np.logspace(2, 7, 5 * 20 + 1)):
+def HESE_effective_areas(json_files=MC_FILENAMES, energy_bins=np.logspace(2, 7, 5 * 20 + 1), interaction_channels=False):
     # Load the MC
     json_data = dict()
     for filename in json_files:
@@ -70,7 +70,7 @@ def HESE_effective_areas(json_files=MC_FILENAMES, energy_bins=np.logspace(2, 7, 
     particle_masks = get_particle_masks(primaryType)
 
     # How to compute and plot the effective area (in a histogram style with errors)
-    def get_eff(masks, label, factor=1.0):
+    def get_eff(masks, factor=1.0):
         # Each entry in masks corresponds to an energy bin
         # The mask should define the events that contribute to the effective area calcualtion in that bin
 
@@ -99,34 +99,99 @@ def HESE_effective_areas(json_files=MC_FILENAMES, energy_bins=np.logspace(2, 7, 
 
         return effective_area_m2, effective_area_m2_error
            
-    # Let's make an effective area vs. energy plot split by neutrino flavor
-    #fig, ax = plt.subplots(figsize=(7, 5))
+           
+    # The factor of 0.5 is needed so that we compute the average
+    # neutrino/antineutrino effective area. This is in contrast to the
+    # effective area plot (FIG. 33) in PhysRevD.104.022002 which plots the
+    # sum of the neutrino and antineutrino effective areas.
     eff, eff_err = [], []
-    for flavor_index, flavor in enumerate(["e", "mu", "tau"]):
-        label = f"ν_{flavor} + ν̄_{flavor}"
+    
+    if interaction_channels == False:
+        print('test')
+        for flavor_index, flavor in enumerate(["e", "mu", "tau"]):
+
+            particle_key = "2nu" + flavor
+            particle_mask = particle_masks[particle_key]
+            masks = np.logical_and(particle_mask[None, :], nu_energy_masks)
+            
+            eff_f, eff_err_f = get_eff(masks, factor=1)
+            eff.append(eff_f)
+            eff_err.append(eff_err_f)
+        #print(eff.shape)
+        eff = [eff[0], eff[1], eff[2]]  # Dont want to distinguish between particle/antiparticle
+        #for eff_ in eff:
+        #    eff_ = [2*x for x in eff_]    #  Double the effective area to account for particle/antiparticle
+    
+    
+    elif interaction_channels == True:
+        for flavor_index, flavor in enumerate(["e", "mu", "tau"]):
+            for interaction_index, interaction in enumerate(["CC", "NC", "GR"]):
+            
+                particle_key = "2nu" + flavor
+                particle_mask = particle_masks[particle_key]
+                particle_mask = np.logical_and(
+                    particle_mask, interaction_masks[interaction_index]
+                )
+                masks = np.logical_and(particle_mask[None, :], nu_energy_masks)
+
+                eff_f, eff_err_f = get_eff(masks, factor=1)
+                eff.append(eff_f)
+                eff_err.append(eff_err_f)
+            
+            
+            
+    """    
+    else:
+            
+        # Make an effective area vs. energy plot split by flavor and interaction type
+        # Charged Current per flavor
+        for flavor_index, flavor in enumerate(["e", "mu", "tau"]):
+            for interaction_index, interaction in enumerate(["CC"]):
+
+                label = (
+                    f"ν_{flavor if flavor == 'e' else '\\' + flavor}"
+                    + f" + ν̄_{flavor if flavor == 'e' else '\\' + flavor}"
+                    + f" {interaction}"
+                )
+                particle_key = "2nu" + flavor
+                particle_mask = particle_masks[particle_key]
+                particle_mask = np.logical_and(
+                    particle_mask, interaction_masks[interaction_index]
+                )
+                masks = np.logical_and(particle_mask[None, :], nu_energy_masks)
+
+                eff_f, eff_err_f = get_eff(masks, label, factor=1)
+                eff.append(eff_f)
+                eff_err.append(eff_err_f)
+
+        # Neutral Current All Flavor
+        label = "NC All Flavor"
+        masks = np.logical_and(interaction_masks[1][None, :], nu_energy_masks)
+        #plot_line(ax, masks, color, line_style, label, factor=0.5)
+
+        # Glashow Resonance
+        flavor = "e"
+        label = (
+            f"ν_{flavor}"
+            + f" + ν̄_{flavor}"
+            + " GR"
+        )
         particle_key = "2nu" + flavor
         particle_mask = particle_masks[particle_key]
+        particle_mask = np.logical_and(particle_mask, interaction_masks[2])
         masks = np.logical_and(particle_mask[None, :], nu_energy_masks)
-        #print(f"masks shape for {flavor}:", np.array(masks).shape)
-        # The factor of 0.5 is needed so that we compute the average
-        # neutrino/antineutrino effective area. This is in contrast to the
-        # effective area plot (FIG. 33) in PhysRevD.104.022002 which plots the
-        # sum of the neutrino and antineutrino effective areas.
-        eff_f, eff_err_f = get_eff(masks, label, factor=1)
-        eff.append(eff_f)
-        eff_err.append(eff_err_f)
+        #plot_line(ax, masks, color, line_style, label, factor=0.5)"""
 
-    eff = [eff[0], eff[1], eff[2]]  # Dont want to distinguish between particle/antiparticle
-    for eff_ in eff:
-        eff_ = [2*x for x in eff_]    #  Double the effective area to account for particle/antiparticle
     
     print("Final eff shape:", np.array(eff).shape)
     #print("Final eff_err shape:", np.array(eff_err).shape)
     # Oklart hur göra med eff_err
     return eff, eff_err
 
+    
 
-def get_effective_area_range(eff, Edep, gen2=True):
+
+def get_effective_area_range(eff, Edep, gen2=False):
     """
     Get the effective area for a specified energy range (Edep) and extrapolate if necessary.
 
@@ -152,7 +217,6 @@ def get_effective_area_range(eff, Edep, gen2=True):
 
     # Filter energy bins within the range of Edep
     mask = (energy_bins > emin) & (energy_bins <= min(emax, 1e7))
-    #print('mask: ', mask)
     energy_filtered = energy_bins[mask]
 
     # Extrapolate for Edep[-1] > 1e7
@@ -169,7 +233,9 @@ def get_effective_area_range(eff, Edep, gen2=True):
             np.concatenate((area[mask], projected_eff)) * (10 if gen2 else 1)
             for area in eff
         ]
+    
     else:
+        print('No extrapolation needed')
         energy_extrapolated = []
         energy_combined = energy_filtered
         eff_new = [area[mask] * (10 if gen2 else 1) for area in eff]
@@ -178,9 +244,10 @@ def get_effective_area_range(eff, Edep, gen2=True):
     return eff_new, energy_combined
 
 
-def get_effective_area_dataframe(Edep, gen2=True):
+
+def get_effective_area_dataframe(Edep, gen2=False, interaction_channels=False):
     # Compute limited/extrapolated effective area and energy bins 
-    eff, eff_err = HESE_effective_areas()
+    eff, eff_err = HESE_effective_areas(interaction_channels=interaction_channels)
     print("eff shape:", np.asarray(eff).shape)
     
     eff_new_range, energy_bins_new = get_effective_area_range(eff, Edep, gen2=gen2)
@@ -193,7 +260,10 @@ def get_effective_area_dataframe(Edep, gen2=True):
     
     eff_new_range = np.asarray(eff_new_range)
     
-    eff_df = pd.DataFrame(eff_new_range.T, index=energy_centers, columns=['nu_e', 'nu_mu', 'nu_tau'])
+    if interaction_channels == False:
+        eff_df = pd.DataFrame(eff_new_range.T, index=energy_centers, columns=['nu_e', 'nu_mu', 'nu_tau'])
+    else:
+        eff_df = pd.DataFrame(eff_new_range.T, index=energy_centers, columns=['nu_e_CC', 'nu_e_NC', 'nu_e_GR', 'nu_mu_CC', 'nu_mu_NC', 'nu_mu_GR', 'nu_tau_CC', 'nu_tau_NC', 'nu_tau_GR'])
     print("eff_df shape:", eff_df.shape)
     return eff_df
 
