@@ -183,6 +183,13 @@ def log1p(xg0):
     return np.log1p(x0), grad0 / up(x0 + 1.0)
 
 
+# Take the exponential of a value gradient tuple
+def exp(xg0):
+    x0, grad0 = xg0
+    val = np.exp(x0)
+    return val, up(val) * grad0
+
+
 # Compute the log of the pdf of a normal distribution evaluated at a value gradient tuple
 def normal_log_pdf(xg0, mu, sigma):
     return minus_r(

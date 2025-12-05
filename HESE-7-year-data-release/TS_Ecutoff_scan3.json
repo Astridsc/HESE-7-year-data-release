@@ -1,0 +1,1130 @@
+{
+  "E_cutoff_values": [
+    100000.0,
+    127427.49857031347,
+    162377.67391887208,
+    206913.808111479,
+    263665.08987303555,
+    335981.8286283781,
+    428133.2398719396,
+    545559.4781168514,
+    695192.7961775606,
+    885866.7904100833,
+    1128837.8916846884,
+    1438449.888287663,
+    1832980.7108324375,
+    2335721.4690901213,
+    2976351.441631319,
+    3792690.1907322537,
+    4832930.238571752,
+    6158482.110660254,
+    7847599.703514607,
+    10000000.0
+  ],
+  "llh_values": [
+    131.70932534391605,
+    130.68837849193096,
+    129.74172597418627,
+    128.80897974267216,
+    127.7441768916295,
+    126.59083043785589,
+    125.58904331687356,
+    124.80548302478493,
+    124.21769153734735,
+    123.78693157438619,
+    123.47736826718165,
+    123.26122646368057,
+    123.11671918112685,
+    123.02615782163079,
+    122.97484638316388,
+    122.95070792789278,
+    122.9442223985983,
+    122.94830066167731,
+    122.95799115506344,
+    122.97004735976905
+  ],
+  "all_params": [
+    {
+      "cr_delta_gamma": -0.011997594580750224,
+      "nunubar_ratio": 0.9943620100918814,
+      "anisotropy_scale": 1.0163500297667403,
+      "astro_gamma": 0.6814444639396191,
+      "astro_norm": 12.243170174191324,
+      "conv_norm": 0.9552551419282077,
+      "epsilon_dom": 0.944967898979798,
+      "epsilon_head_on": -0.2238584071280516,
+      "muon_norm": 1.2187613323279178,
+      "kpi_ratio": 0.997590052444378,
+      "prompt_norm": 9.084331402617574,
+      "cutoff_energy": 100000.0
+    },
+    {
+      "cr_delta_gamma": -0.010956959609390056,
+      "nunubar_ratio": 0.9944683377921775,
+      "anisotropy_scale": 1.016372351688108,
+      "astro_gamma": 1.0385638396376409,
+      "astro_norm": 9.909900985307223,
+      "conv_norm": 0.9600919518184964,
+      "epsilon_dom": 0.9465098284364728,
+      "epsilon_head_on": -0.2142772911943272,
+      "muon_norm": 1.2180366262697322,
+      "kpi_ratio": 0.9978346271618483,
+      "prompt_norm": 8.501776689800892,
+      "cutoff_energy": 127427.49857031347
+    },
+    {
+      "cr_delta_gamma": -0.009879941752842712,
+      "nunubar_ratio": 0.9948317860895418,
+      "anisotropy_scale": 1.0159363627174562,
+      "astro_gamma": 1.328822893307085,
+      "astro_norm": 8.445928848201234,
+      "conv_norm": 0.9662370843097604,
+      "epsilon_dom": 0.9480746777611636,
+      "epsilon_head_on": -0.20164028388937977,
+      "muon_norm": 1.2169954544941983,
+      "kpi_ratio": 0.9981497940837037,
+      "prompt_norm": 7.826031558861742,
+      "cutoff_energy": 162377.67391887208
+    },
+    {
+      "cr_delta_gamma": -0.008024703853442753,
+      "nunubar_ratio": 0.9956617867148547,
+      "anisotropy_scale": 1.0144095511488578,
+      "astro_gamma": 1.5329555940948325,
+      "astro_norm": 7.457819869092375,
+      "conv_norm": 0.9783277533353404,
+      "epsilon_dom": 0.9502146689042101,
+      "epsilon_head_on": -0.1814374922438075,
+      "muon_norm": 1.2164342433408284,
+      "kpi_ratio": 0.998768560857189,
+      "prompt_norm": 6.689403444886402,
+      "cutoff_energy": 206913.808111479
+    },
+    {
+      "cr_delta_gamma": -0.005434293470780448,
+      "nunubar_ratio": 0.9973201625419795,
+      "anisotropy_scale": 1.01014406298892,
+      "astro_gamma": 1.6703477775870728,
+      "astro_norm": 6.920548189294489,
+      "conv_norm": 1.0036791658338289,
+      "epsilon_dom": 0.95301202214105,
+      "epsilon_head_on": -0.13942968597268493,
+      "muon_norm": 1.2148871883772867,
+      "kpi_ratio": 1.000036831757969,
+      "prompt_norm": 4.442928792323767,
+      "cutoff_energy": 263665.08987303555
+    },
+    {
+      "cr_delta_gamma": -0.004538553407464266,
+      "nunubar_ratio": 0.9986057415172266,
+      "anisotropy_scale": 1.008366125340757,
+      "astro_gamma": 1.8455154677165333,
+      "astro_norm": 6.859648420802741,
+      "conv_norm": 1.0281466028397444,
+      "epsilon_dom": 0.9546757631984724,
+      "epsilon_head_on": -0.09435096228964075,
+      "muon_norm": 1.2097513545139202,
+      "kpi_ratio": 1.001343089654808,
+      "prompt_norm": 2.1386829799905267,
+      "cutoff_energy": 335981.8286283781
+    },
+    {
+      "cr_delta_gamma": -0.0047787634629987375,
+      "nunubar_ratio": 0.9991978728621281,
+      "anisotropy_scale": 1.0053422606356361,
+      "astro_gamma": 2.0253746324647417,
+      "astro_norm": 6.8669357639205515,
+      "conv_norm": 1.0410869733137573,
+      "epsilon_dom": 0.9552950560427065,
+      "epsilon_head_on": -0.06885102580026331,
+      "muon_norm": 1.2049516279872927,
+      "kpi_ratio": 1.0020574811758653,
+      "prompt_norm": 0.7835795483961372,
+      "cutoff_energy": 428133.2398719396
+    },
+    {
+      "cr_delta_gamma": -0.005135168122234817,
+      "nunubar_ratio": 0.9995009422695135,
+      "anisotropy_scale": 1.0037700092868624,
+      "astro_gamma": 2.177092639421187,
+      "astro_norm": 6.827135713629155,
+      "conv_norm": 1.0475538681136567,
+      "epsilon_dom": 0.9555897386055366,
+      "epsilon_head_on": -0.05554363677164343,
+      "muon_norm": 1.2010841460570376,
+      "kpi_ratio": 1.0024175137354856,
+      "prompt_norm": 0.06107864337577196,
+      "cutoff_energy": 545559.4781168514
+    },
+    {
+      "cr_delta_gamma": -0.005220965423950584,
+      "nunubar_ratio": 0.9995146369335914,
+      "anisotropy_scale": 1.0028838265696032,
+      "astro_gamma": 2.2975788577805827,
+      "astro_norm": 6.687219766618349,
+      "conv_norm": 1.047941522116378,
+      "epsilon_dom": 0.9556796102940869,
+      "epsilon_head_on": -0.053631087905289226,
+      "muon_norm": 1.1993279653230886,
+      "kpi_ratio": 1.0024387052765151,
+      "prompt_norm": 0.0,
+      "cutoff_energy": 695192.7961775606
+    },
+    {
+      "cr_delta_gamma": -0.005294190178299397,
+      "nunubar_ratio": 0.9995166811411813,
+      "anisotropy_scale": 1.0022560500305606,
+      "astro_gamma": 2.3965391343685543,
+      "astro_norm": 6.577730138119458,
+      "conv_norm": 1.0481602886753347,
+      "epsilon_dom": 0.955737903842594,
+      "epsilon_head_on": -0.052972179423037696,
+      "muon_norm": 1.1978865825999228,
+      "kpi_ratio": 1.0024297283828503,
+      "prompt_norm": 0.0,
+      "cutoff_energy": 885866.7904100833
+    },
+    {
+      "cr_delta_gamma": -0.0053736540783626404,
+      "nunubar_ratio": 0.9994972111423974,
+      "anisotropy_scale": 1.0018284634448076,
+      "astro_gamma": 2.478552050224486,
+      "astro_norm": 6.501579037396389,
+      "conv_norm": 1.0484908850633625,
+      "epsilon_dom": 0.9557536248526516,
+      "epsilon_head_on": -0.052534811660978634,
+      "muon_norm": 1.196840227516841,
+      "kpi_ratio": 1.0024162684985054,
+      "prompt_norm": 0.0,
+      "cutoff_energy": 1128837.8916846884
+    },
+    {
+      "cr_delta_gamma": -0.005447811871748777,
+      "nunubar_ratio": 0.9995090485522067,
+      "anisotropy_scale": 1.0014669352031025,
+      "astro_gamma": 2.5469939302044144,
+      "astro_norm": 6.4520876902401145,
+      "conv_norm": 1.0488150114515769,
+      "epsilon_dom": 0.9557859013897146,
+      "epsilon_head_on": -0.05220914589347264,
+      "muon_norm": 1.1954109646432187,
+      "kpi_ratio": 1.0024618942260466,
+      "prompt_norm": 0.0,
+      "cutoff_energy": 1438449.888287663
+    },
+    {
+      "cr_delta_gamma": -0.005526545187021486,
+      "nunubar_ratio": 0.9995171607834004,
+      "anisotropy_scale": 1.0013267723056432,
+      "astro_gamma": 2.6045361081936758,
+      "astro_norm": 6.42380129057629,
+      "conv_norm": 1.0491550145679736,
+      "epsilon_dom": 0.9557726011047197,
+      "epsilon_head_on": -0.051788783890174904,
+      "muon_norm": 1.1941925228953476,
+      "kpi_ratio": 1.0024958082505506,
+      "prompt_norm": 0.0,
+      "cutoff_energy": 1832980.7108324375
+    },
+    {
+      "cr_delta_gamma": -0.005611010014347638,
+      "nunubar_ratio": 0.9995112111292983,
+      "anisotropy_scale": 1.0011024167817657,
+      "astro_gamma": 2.65283189791285,
+      "astro_norm": 6.407707875955772,
+      "conv_norm": 1.0496874954305708,
+      "epsilon_dom": 0.9557534810794647,
+      "epsilon_head_on": -0.051530037943827996,
+      "muon_norm": 1.193238620258816,
+      "kpi_ratio": 1.0025006191413517,
+      "prompt_norm": 0.0,
+      "cutoff_energy": 2335721.4690901213
+    },
+    {
+      "cr_delta_gamma": -0.005688712635921215,
+      "nunubar_ratio": 0.9995191826887639,
+      "anisotropy_scale": 1.0010193520165385,
+      "astro_gamma": 2.6936278514690306,
+      "astro_norm": 6.403486792245081,
+      "conv_norm": 1.0501290528847596,
+      "epsilon_dom": 0.9557117393585546,
+      "epsilon_head_on": -0.0512477741368814,
+      "muon_norm": 1.1922449549485914,
+      "kpi_ratio": 1.0025217774817166,
+      "prompt_norm": 0.0,
+      "cutoff_energy": 2976351.441631319
+    },
+    {
+      "cr_delta_gamma": -0.005756385938940334,
+      "nunubar_ratio": 0.999521584526574,
+      "anisotropy_scale": 1.0009818876320173,
+      "astro_gamma": 2.727881336810262,
+      "astro_norm": 6.405811542591569,
+      "conv_norm": 1.0506847060912206,
+      "epsilon_dom": 0.9556584533386685,
+      "epsilon_head_on": -0.05100675456503212,
+      "muon_norm": 1.1912851896228778,
+      "kpi_ratio": 1.0025292876957144,
+      "prompt_norm": 0.0,
+      "cutoff_energy": 3792690.1907322537
+    },
+    {
+      "cr_delta_gamma": -0.005825342943564192,
+      "nunubar_ratio": 0.9995260077065765,
+      "anisotropy_scale": 1.0008283388726888,
+      "astro_gamma": 2.7562533126997084,
+      "astro_norm": 6.411268278667897,
+      "conv_norm": 1.0506473977385655,
+      "epsilon_dom": 0.9556199407664894,
+      "epsilon_head_on": -0.0507031834099672,
+      "muon_norm": 1.1909088209456757,
+      "kpi_ratio": 1.0025777363082988,
+      "prompt_norm": 0.0,
+      "cutoff_energy": 4832930.238571752
+    },
+    {
+      "cr_delta_gamma": -0.005890103680475621,
+      "nunubar_ratio": 0.99953742060239,
+      "anisotropy_scale": 1.000912777714829,
+      "astro_gamma": 2.779850915609014,
+      "astro_norm": 6.418870602185619,
+      "conv_norm": 1.0512691816507411,
+      "epsilon_dom": 0.9555564361396082,
+      "epsilon_head_on": -0.05058296087904593,
+      "muon_norm": 1.1899972005988684,
+      "kpi_ratio": 1.0025872111148737,
+      "prompt_norm": 0.0,
+      "cutoff_energy": 6158482.110660254
+    },
+    {
+      "cr_delta_gamma": -0.0059498572945927315,
+      "nunubar_ratio": 0.9995295493386294,
+      "anisotropy_scale": 1.0008794749758727,
+      "astro_gamma": 2.7991593635776857,
+      "astro_norm": 6.426778635506163,
+      "conv_norm": 1.0516272204089236,
+      "epsilon_dom": 0.9554890842324364,
+      "epsilon_head_on": -0.05045499847121193,
+      "muon_norm": 1.1896808006571251,
+      "kpi_ratio": 1.0026070936233538,
+      "prompt_norm": 0.0,
+      "cutoff_energy": 7847599.703514607
+    },
+    {
+      "cr_delta_gamma": -0.005972108448727534,
+      "nunubar_ratio": 0.9995865381274737,
+      "anisotropy_scale": 1.0008869946811239,
+      "astro_gamma": 2.8147013634195357,
+      "astro_norm": 6.433283948861041,
+      "conv_norm": 1.0519681967906989,
+      "epsilon_dom": 0.955456036874888,
+      "epsilon_head_on": -0.05003955618163312,
+      "muon_norm": 1.1889438411857782,
+      "kpi_ratio": 1.0026135595008083,
+      "prompt_norm": 0.0,
+      "cutoff_energy": 10000000.0
+    }
+  ],
+  "all_fit_results": [
+    [
+      {
+        "llh": 131.70932534391605,
+        "params": {
+          "cr_delta_gamma": -0.011997594580750224,
+          "nunubar_ratio": 0.9943620100918814,
+          "anisotropy_scale": 1.0163500297667403,
+          "astro_gamma": 0.6814444639396191,
+          "astro_norm": 12.243170174191324,
+          "conv_norm": 0.9552551419282077,
+          "epsilon_dom": 0.944967898979798,
+          "epsilon_head_on": -0.2238584071280516,
+          "muon_norm": 1.2187613323279178,
+          "kpi_ratio": 0.997590052444378,
+          "prompt_norm": 9.084331402617574,
+          "cutoff_energy": 100000.0
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 132.06854001569312,
+        "params": {
+          "cr_delta_gamma": -0.009461042637414593,
+          "nunubar_ratio": 0.9928162080571942,
+          "anisotropy_scale": 1.0161506337762092,
+          "astro_gamma": 0.6836665279051349,
+          "astro_norm": 11.901989787632123,
+          "conv_norm": 0.9077943613995465,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.23575714327172886,
+          "muon_norm": 1.2176995857832824,
+          "kpi_ratio": 0.9955103110466819,
+          "prompt_norm": 8.238162005477607,
+          "cutoff_energy": 100000.0
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 130.68837849193096,
+        "params": {
+          "cr_delta_gamma": -0.010956959609390056,
+          "nunubar_ratio": 0.9944683377921775,
+          "anisotropy_scale": 1.016372351688108,
+          "astro_gamma": 1.0385638396376409,
+          "astro_norm": 9.909900985307223,
+          "conv_norm": 0.9600919518184964,
+          "epsilon_dom": 0.9465098284364728,
+          "epsilon_head_on": -0.2142772911943272,
+          "muon_norm": 1.2180366262697322,
+          "kpi_ratio": 0.9978346271618483,
+          "prompt_norm": 8.501776689800892,
+          "cutoff_energy": 127427.49857031347
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 131.04513933818828,
+        "params": {
+          "cr_delta_gamma": -0.008478144072292982,
+          "nunubar_ratio": 0.9929354619710562,
+          "anisotropy_scale": 1.0160234063665208,
+          "astro_gamma": 1.042449407196157,
+          "astro_norm": 9.65956209294897,
+          "conv_norm": 0.9136424843060302,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.22354491904526236,
+          "muon_norm": 1.2169058504683314,
+          "kpi_ratio": 0.9957601947230286,
+          "prompt_norm": 7.7277533198054575,
+          "cutoff_energy": 127427.49857031347
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 129.74172597418627,
+        "params": {
+          "cr_delta_gamma": -0.009879941752842712,
+          "nunubar_ratio": 0.9948317860895418,
+          "anisotropy_scale": 1.0159363627174562,
+          "astro_gamma": 1.328822893307085,
+          "astro_norm": 8.445928848201234,
+          "conv_norm": 0.9662370843097604,
+          "epsilon_dom": 0.9480746777611636,
+          "epsilon_head_on": -0.20164028388937977,
+          "muon_norm": 1.2169954544941983,
+          "kpi_ratio": 0.9981497940837037,
+          "prompt_norm": 7.826031558861742,
+          "cutoff_energy": 162377.67391887208
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 130.2060598084989,
+        "params": {
+          "cr_delta_gamma": -0.0056705799841188995,
+          "nunubar_ratio": 0.9920779756387511,
+          "anisotropy_scale": 1.0157206246352772,
+          "astro_gamma": 1.3046442203057442,
+          "astro_norm": 7.567245614093506,
+          "conv_norm": 0.8841768999598713,
+          "epsilon_dom": 1.038552266593,
+          "epsilon_head_on": -0.22102413100513502,
+          "muon_norm": 1.2214612217078475,
+          "kpi_ratio": 0.9945520725076751,
+          "prompt_norm": 6.234816503850035,
+          "cutoff_energy": 162377.67391887208
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 128.80897974267216,
+        "params": {
+          "cr_delta_gamma": -0.008024703853442753,
+          "nunubar_ratio": 0.9956617867148547,
+          "anisotropy_scale": 1.0144095511488578,
+          "astro_gamma": 1.5329555940948325,
+          "astro_norm": 7.457819869092375,
+          "conv_norm": 0.9783277533353404,
+          "epsilon_dom": 0.9502146689042101,
+          "epsilon_head_on": -0.1814374922438075,
+          "muon_norm": 1.2164342433408284,
+          "kpi_ratio": 0.998768560857189,
+          "prompt_norm": 6.689403444886402,
+          "cutoff_energy": 206913.808111479
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 129.25222127765298,
+        "params": {
+          "cr_delta_gamma": -0.0035552309166608552,
+          "nunubar_ratio": 0.9931506045388153,
+          "anisotropy_scale": 1.0140396242459746,
+          "astro_gamma": 1.5037842639704178,
+          "astro_norm": 6.65733261917313,
+          "conv_norm": 0.8991064315375161,
+          "epsilon_dom": 1.0403567302979464,
+          "epsilon_head_on": -0.200272370569368,
+          "muon_norm": 1.2211133373326812,
+          "kpi_ratio": 0.9951497046589763,
+          "prompt_norm": 5.257581863208313,
+          "cutoff_energy": 206913.808111479
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 127.7441768916295,
+        "params": {
+          "cr_delta_gamma": -0.005434293470780448,
+          "nunubar_ratio": 0.9973201625419795,
+          "anisotropy_scale": 1.01014406298892,
+          "astro_gamma": 1.6703477775870728,
+          "astro_norm": 6.920548189294489,
+          "conv_norm": 1.0036791658338289,
+          "epsilon_dom": 0.95301202214105,
+          "epsilon_head_on": -0.13942968597268493,
+          "muon_norm": 1.2148871883772867,
+          "kpi_ratio": 1.000036831757969,
+          "prompt_norm": 4.442928792323767,
+          "cutoff_energy": 263665.08987303555
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 128.0472400336297,
+        "params": {
+          "cr_delta_gamma": -0.002785772675572846,
+          "nunubar_ratio": 0.996375836366284,
+          "anisotropy_scale": 1.010101833352632,
+          "astro_gamma": 1.6724628734167801,
+          "astro_norm": 6.845805049979568,
+          "conv_norm": 0.9658095264379714,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.13599673419373784,
+          "muon_norm": 1.2128053115185518,
+          "kpi_ratio": 0.9981821374311958,
+          "prompt_norm": 3.682759778612798,
+          "cutoff_energy": 263665.08987303555
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 126.59083043785589,
+        "params": {
+          "cr_delta_gamma": -0.004538553407464266,
+          "nunubar_ratio": 0.9986057415172266,
+          "anisotropy_scale": 1.008366125340757,
+          "astro_gamma": 1.8455154677165333,
+          "astro_norm": 6.859648420802741,
+          "conv_norm": 1.0281466028397444,
+          "epsilon_dom": 0.9546757631984724,
+          "epsilon_head_on": -0.09435096228964075,
+          "muon_norm": 1.2097513545139202,
+          "kpi_ratio": 1.001343089654808,
+          "prompt_norm": 2.1386829799905267,
+          "cutoff_energy": 335981.8286283781
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 126.84126644523693,
+        "params": {
+          "cr_delta_gamma": -0.0020169621795160307,
+          "nunubar_ratio": 0.9979627082629742,
+          "anisotropy_scale": 1.0073609058712558,
+          "astro_gamma": 1.8545292986010937,
+          "astro_norm": 6.889926460816979,
+          "conv_norm": 0.9944863793592493,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.08376955661895305,
+          "muon_norm": 1.2068348979421932,
+          "kpi_ratio": 0.999627632880122,
+          "prompt_norm": 1.1387281037235244,
+          "cutoff_energy": 335981.8286283781
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 125.58904331687356,
+        "params": {
+          "cr_delta_gamma": -0.0047787634629987375,
+          "nunubar_ratio": 0.9991978728621281,
+          "anisotropy_scale": 1.0053422606356361,
+          "astro_gamma": 2.0253746324647417,
+          "astro_norm": 6.8669357639205515,
+          "conv_norm": 1.0410869733137573,
+          "epsilon_dom": 0.9552950560427065,
+          "epsilon_head_on": -0.06885102580026331,
+          "muon_norm": 1.2049516279872927,
+          "kpi_ratio": 1.0020574811758653,
+          "prompt_norm": 0.7835795483961372,
+          "cutoff_energy": 428133.2398719396
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 125.79972463686768,
+        "params": {
+          "cr_delta_gamma": -0.002292077025694637,
+          "nunubar_ratio": 0.9985063388300328,
+          "anisotropy_scale": 1.004691482589912,
+          "astro_gamma": 2.035944915408082,
+          "astro_norm": 6.863621050093155,
+          "conv_norm": 1.0059046779170773,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.06156082656162559,
+          "muon_norm": 1.202359707019395,
+          "kpi_ratio": 1.0001743435971102,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 428133.2398719396
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 124.80548302478493,
+        "params": {
+          "cr_delta_gamma": -0.005135168122234817,
+          "nunubar_ratio": 0.9995009422695135,
+          "anisotropy_scale": 1.0037700092868624,
+          "astro_gamma": 2.177092639421187,
+          "astro_norm": 6.827135713629155,
+          "conv_norm": 1.0475538681136567,
+          "epsilon_dom": 0.9555897386055366,
+          "epsilon_head_on": -0.05554363677164343,
+          "muon_norm": 1.2010841460570376,
+          "kpi_ratio": 1.0024175137354856,
+          "prompt_norm": 0.06107864337577196,
+          "cutoff_energy": 545559.4781168514
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 125.0034406947008,
+        "params": {
+          "cr_delta_gamma": -0.0023225121707817213,
+          "nunubar_ratio": 0.9984873686141279,
+          "anisotropy_scale": 1.0036026949331969,
+          "astro_gamma": 2.1812923842688687,
+          "astro_norm": 6.6535998335667825,
+          "conv_norm": 1.0056109128027315,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.06102989620384326,
+          "muon_norm": 1.2005571493828198,
+          "kpi_ratio": 1.0001604835978435,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 545559.4781168514
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 124.21769153734735,
+        "params": {
+          "cr_delta_gamma": -0.005220965423950584,
+          "nunubar_ratio": 0.9995146369335914,
+          "anisotropy_scale": 1.0028838265696032,
+          "astro_gamma": 2.2975788577805827,
+          "astro_norm": 6.687219766618349,
+          "conv_norm": 1.047941522116378,
+          "epsilon_dom": 0.9556796102940869,
+          "epsilon_head_on": -0.053631087905289226,
+          "muon_norm": 1.1993279653230886,
+          "kpi_ratio": 1.0024387052765151,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 695192.7961775606
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 124.41090664022505,
+        "params": {
+          "cr_delta_gamma": -0.002385017249964104,
+          "nunubar_ratio": 0.9984841554398064,
+          "anisotropy_scale": 1.0027350868472933,
+          "astro_gamma": 2.300962521001353,
+          "astro_norm": 6.502445355256667,
+          "conv_norm": 1.0057056439358913,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.06037236735026208,
+          "muon_norm": 1.1989962491696138,
+          "kpi_ratio": 1.0001555469057248,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 695192.7961775606
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 123.78693157438619,
+        "params": {
+          "cr_delta_gamma": -0.005294190178299397,
+          "nunubar_ratio": 0.9995166811411813,
+          "anisotropy_scale": 1.0022560500305606,
+          "astro_gamma": 2.3965391343685543,
+          "astro_norm": 6.577730138119458,
+          "conv_norm": 1.0481602886753347,
+          "epsilon_dom": 0.955737903842594,
+          "epsilon_head_on": -0.052972179423037696,
+          "muon_norm": 1.1978865825999228,
+          "kpi_ratio": 1.0024297283828503,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 885866.7904100833
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 123.97628375266251,
+        "params": {
+          "cr_delta_gamma": -0.002465521269756567,
+          "nunubar_ratio": 0.9984796224023469,
+          "anisotropy_scale": 1.0021293247974368,
+          "astro_gamma": 2.399690972395742,
+          "astro_norm": 6.394920248232084,
+          "conv_norm": 1.0060688431538503,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.0599592309368403,
+          "muon_norm": 1.197643395436433,
+          "kpi_ratio": 1.0001669153381676,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 885866.7904100833
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 123.47736826718165,
+        "params": {
+          "cr_delta_gamma": -0.0053736540783626404,
+          "nunubar_ratio": 0.9994972111423974,
+          "anisotropy_scale": 1.0018284634448076,
+          "astro_gamma": 2.478552050224486,
+          "astro_norm": 6.501579037396389,
+          "conv_norm": 1.0484908850633625,
+          "epsilon_dom": 0.9557536248526516,
+          "epsilon_head_on": -0.052534811660978634,
+          "muon_norm": 1.196840227516841,
+          "kpi_ratio": 1.0024162684985054,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 1128837.8916846884
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 123.66358303754843,
+        "params": {
+          "cr_delta_gamma": -0.0025516515450418214,
+          "nunubar_ratio": 0.9984809656752569,
+          "anisotropy_scale": 1.0016674271591646,
+          "astro_gamma": 2.481555594887354,
+          "astro_norm": 6.320581914586394,
+          "conv_norm": 1.0065539155504117,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.05960144766332576,
+          "muon_norm": 1.1963728520317713,
+          "kpi_ratio": 1.000183088304741,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 1128837.8916846884
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 123.26122646368057,
+        "params": {
+          "cr_delta_gamma": -0.005447811871748777,
+          "nunubar_ratio": 0.9995090485522067,
+          "anisotropy_scale": 1.0014669352031025,
+          "astro_gamma": 2.5469939302044144,
+          "astro_norm": 6.4520876902401145,
+          "conv_norm": 1.0488150114515769,
+          "epsilon_dom": 0.9557859013897146,
+          "epsilon_head_on": -0.05220914589347264,
+          "muon_norm": 1.1954109646432187,
+          "kpi_ratio": 1.0024618942260466,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 1438449.888287663
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 123.44493180189981,
+        "params": {
+          "cr_delta_gamma": -0.0026443279872656747,
+          "nunubar_ratio": 0.9985155225497873,
+          "anisotropy_scale": 1.0013640226154676,
+          "astro_gamma": 2.549859915300382,
+          "astro_norm": 6.271488887240096,
+          "conv_norm": 1.0070008579706602,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.05928339916083879,
+          "muon_norm": 1.1952065228272821,
+          "kpi_ratio": 1.0002093437602764,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 1438449.888287663
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 123.11671918112685,
+        "params": {
+          "cr_delta_gamma": -0.005526545187021486,
+          "nunubar_ratio": 0.9995171607834004,
+          "anisotropy_scale": 1.0013267723056432,
+          "astro_gamma": 2.6045361081936758,
+          "astro_norm": 6.42380129057629,
+          "conv_norm": 1.0491550145679736,
+          "epsilon_dom": 0.9557726011047197,
+          "epsilon_head_on": -0.051788783890174904,
+          "muon_norm": 1.1941925228953476,
+          "kpi_ratio": 1.0024958082505506,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 1832980.7108324375
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 123.29845093899722,
+        "params": {
+          "cr_delta_gamma": -0.0027286603276066943,
+          "nunubar_ratio": 0.9984893129673861,
+          "anisotropy_scale": 1.0011708923095093,
+          "astro_gamma": 2.607147556151161,
+          "astro_norm": 6.241894821199291,
+          "conv_norm": 1.0076641751814295,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.05904825837800555,
+          "muon_norm": 1.1942228027627244,
+          "kpi_ratio": 1.000229786384727,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 1832980.7108324375
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 123.02615782163079,
+        "params": {
+          "cr_delta_gamma": -0.005611010014347638,
+          "nunubar_ratio": 0.9995112111292983,
+          "anisotropy_scale": 1.0011024167817657,
+          "astro_gamma": 2.65283189791285,
+          "astro_norm": 6.407707875955772,
+          "conv_norm": 1.0496874954305708,
+          "epsilon_dom": 0.9557534810794647,
+          "epsilon_head_on": -0.051530037943827996,
+          "muon_norm": 1.193238620258816,
+          "kpi_ratio": 1.0025006191413517,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 2335721.4690901213
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 123.20636885724402,
+        "params": {
+          "cr_delta_gamma": -0.0028110147929005366,
+          "nunubar_ratio": 0.998486059729317,
+          "anisotropy_scale": 1.000999691045536,
+          "astro_gamma": 2.6554803492994883,
+          "astro_norm": 6.2270814516838024,
+          "conv_norm": 1.0081226879652867,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.05884861378167941,
+          "muon_norm": 1.1932187931087697,
+          "kpi_ratio": 1.0002516818480651,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 2335721.4690901213
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 122.97484638316388,
+        "params": {
+          "cr_delta_gamma": -0.005688712635921215,
+          "nunubar_ratio": 0.9995191826887639,
+          "anisotropy_scale": 1.0010193520165385,
+          "astro_gamma": 2.6936278514690306,
+          "astro_norm": 6.403486792245081,
+          "conv_norm": 1.0501290528847596,
+          "epsilon_dom": 0.9557117393585546,
+          "epsilon_head_on": -0.0512477741368814,
+          "muon_norm": 1.1922449549485914,
+          "kpi_ratio": 1.0025217774817166,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 2976351.441631319
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 123.15390681795112,
+        "params": {
+          "cr_delta_gamma": -0.0028860872127220625,
+          "nunubar_ratio": 0.9984899143367887,
+          "anisotropy_scale": 1.0009218848380064,
+          "astro_gamma": 2.6962409728284293,
+          "astro_norm": 6.2221708740906365,
+          "conv_norm": 1.0086147235071856,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.058660431689684545,
+          "muon_norm": 1.1922985781694733,
+          "kpi_ratio": 1.0003116330923636,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 2976351.441631319
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 122.95070792789278,
+        "params": {
+          "cr_delta_gamma": -0.005756385938940334,
+          "nunubar_ratio": 0.999521584526574,
+          "anisotropy_scale": 1.0009818876320173,
+          "astro_gamma": 2.727881336810262,
+          "astro_norm": 6.405811542591569,
+          "conv_norm": 1.0506847060912206,
+          "epsilon_dom": 0.9556584533386685,
+          "epsilon_head_on": -0.05100675456503212,
+          "muon_norm": 1.1912851896228778,
+          "kpi_ratio": 1.0025292876957144,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 3792690.1907322537
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 123.1289108040224,
+        "params": {
+          "cr_delta_gamma": -0.002958517653163444,
+          "nunubar_ratio": 0.9984924891098599,
+          "anisotropy_scale": 1.0008375824000397,
+          "astro_gamma": 2.7303373035875147,
+          "astro_norm": 6.223358528678258,
+          "conv_norm": 1.009067259416942,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.05853210783324577,
+          "muon_norm": 1.1914013457063748,
+          "kpi_ratio": 1.0003042641920856,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 3792690.1907322537
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 122.9442223985983,
+        "params": {
+          "cr_delta_gamma": -0.005825342943564192,
+          "nunubar_ratio": 0.9995260077065765,
+          "anisotropy_scale": 1.0008283388726888,
+          "astro_gamma": 2.7562533126997084,
+          "astro_norm": 6.411268278667897,
+          "conv_norm": 1.0506473977385655,
+          "epsilon_dom": 0.9556199407664894,
+          "epsilon_head_on": -0.0507031834099672,
+          "muon_norm": 1.1909088209456757,
+          "kpi_ratio": 1.0025777363082988,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 4832930.238571752
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 123.12179194318237,
+        "params": {
+          "cr_delta_gamma": -0.0030263996784973346,
+          "nunubar_ratio": 0.9984862517744565,
+          "anisotropy_scale": 1.0007733115517317,
+          "astro_gamma": 2.7589299527361217,
+          "astro_norm": 6.229255831413957,
+          "conv_norm": 1.0094989387428996,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.05836721940285611,
+          "muon_norm": 1.19063719916395,
+          "kpi_ratio": 1.0003316936216315,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 4832930.238571752
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 122.94830066167731,
+        "params": {
+          "cr_delta_gamma": -0.005890103680475621,
+          "nunubar_ratio": 0.99953742060239,
+          "anisotropy_scale": 1.000912777714829,
+          "astro_gamma": 2.779850915609014,
+          "astro_norm": 6.418870602185619,
+          "conv_norm": 1.0512691816507411,
+          "epsilon_dom": 0.9555564361396082,
+          "epsilon_head_on": -0.05058296087904593,
+          "muon_norm": 1.1899972005988684,
+          "kpi_ratio": 1.0025872111148737,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 6158482.110660254
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 123.12540652880111,
+        "params": {
+          "cr_delta_gamma": -0.0030840217511575647,
+          "nunubar_ratio": 0.9984926230955498,
+          "anisotropy_scale": 1.0008031810576,
+          "astro_gamma": 2.7823787229779002,
+          "astro_norm": 6.235105676373056,
+          "conv_norm": 1.009945331527223,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.058444760258986275,
+          "muon_norm": 1.1902400328997953,
+          "kpi_ratio": 1.0003401062239738,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 6158482.110660254
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 122.95799115506344,
+        "params": {
+          "cr_delta_gamma": -0.0059498572945927315,
+          "nunubar_ratio": 0.9995295493386294,
+          "anisotropy_scale": 1.0008794749758727,
+          "astro_gamma": 2.7991593635776857,
+          "astro_norm": 6.426778635506163,
+          "conv_norm": 1.0516272204089236,
+          "epsilon_dom": 0.9554890842324364,
+          "epsilon_head_on": -0.05045499847121193,
+          "muon_norm": 1.1896808006571251,
+          "kpi_ratio": 1.0026070936233538,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 7847599.703514607
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 123.13475665308722,
+        "params": {
+          "cr_delta_gamma": -0.003141417380880503,
+          "nunubar_ratio": 0.9984952180391504,
+          "anisotropy_scale": 1.0007791119273286,
+          "astro_gamma": 2.801609661851872,
+          "astro_norm": 6.242656265300982,
+          "conv_norm": 1.010254730021458,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.05867835322552079,
+          "muon_norm": 1.1896981409610798,
+          "kpi_ratio": 1.0003264027577008,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 7847599.703514607
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ],
+    [
+      {
+        "llh": 122.97004735976905,
+        "params": {
+          "cr_delta_gamma": -0.005972108448727534,
+          "nunubar_ratio": 0.9995865381274737,
+          "anisotropy_scale": 1.0008869946811239,
+          "astro_gamma": 2.8147013634195357,
+          "astro_norm": 6.433283948861041,
+          "conv_norm": 1.0519681967906989,
+          "epsilon_dom": 0.955456036874888,
+          "epsilon_head_on": -0.05003955618163312,
+          "muon_norm": 1.1889438411857782,
+          "kpi_ratio": 1.0026135595008083,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 10000000.0
+        },
+        "interval": "low",
+        "epsilon_range": "[0.8, 0.99]"
+      },
+      {
+        "llh": 123.14656135351036,
+        "params": {
+          "cr_delta_gamma": -0.003173978963617391,
+          "nunubar_ratio": 0.99851626381382,
+          "anisotropy_scale": 1.0007587547382857,
+          "astro_gamma": 2.8174085019747626,
+          "astro_norm": 6.2502038165311395,
+          "conv_norm": 1.0104838867031336,
+          "epsilon_dom": 0.99,
+          "epsilon_head_on": -0.05802012849133981,
+          "muon_norm": 1.1890048977906236,
+          "kpi_ratio": 1.0003355139845347,
+          "prompt_norm": 0.0,
+          "cutoff_energy": 10000000.0
+        },
+        "interval": "high",
+        "epsilon_range": "[0.99, 1.25]"
+      }
+    ]
+  ]
+}

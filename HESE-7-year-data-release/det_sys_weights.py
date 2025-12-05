@@ -1,6 +1,7 @@
 import numpy as np
 import photospline
 import autodiff
+import os
 
 
 class SysWeighter:
@@ -160,9 +161,12 @@ class SysWeighter:
         else:
             raise ValueError("flux_component must be either Astro, Conv, or Prompt")
 
-        spline_filename = (
-            "resources/splines/"
-            + systematic_string
+        # Get base path relative to this file's location
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        spline_filename = os.path.join(
+            base_path,
+            "resources/splines",
+            systematic_string
             + flux_component_string
             + "_"
             + morphology_string

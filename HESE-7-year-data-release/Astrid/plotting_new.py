@@ -15,7 +15,6 @@ from matplotlib.collections import LineCollection
 import functools
 
 import numpy as np
-
 import json
 import pandas as pd
 

@@ -5,6 +5,57 @@ command line arguments. One can also choose to fix certain parameters in the
 fit, where the fixed value is kept at the initial value
 """
 
+"""
+OUTPUT FROM FITTING SPL:
+(nusiprop) astridaurora@LAPTOP-H6QI3I8N:~/HESE-7-year-data-release/HESE-7-year-data-release$ python HESE_fit.py
+Running fit
+Fit took 1298.063502073288 seconds
+Best Fit -LLH:  122.95919802083874
+Best Fit Paramters:
+        cr_delta_gamma:         -0.05309198828568753
+        nunubar_ratio:  0.998164256210702
+        anisotropy_scale:       1.0007247919049886
+        astro_gamma:    2.8737764773857943
+        astro_norm:     6.365300091182592
+        conv_norm:      1.006210702376819
+        epsilon_dom:    0.9519225902130987
+        epsilon_head_on:        -0.05499094382686424
+        muon_norm:      1.1868488857218278
+        kpi_ratio:      1.0001423496123587
+        prompt_norm:    0.0
+{'grad': array([-1.19226273e-04,  1.89395003e-04,  5.31073096e-04, -3.95635879e-04,
+       -4.64323521e-05,  1.76296805e-04,  2.36586607e-03,  9.81904293e-04,
+       -7.87427092e-04,  3.45024198e-04,  1.89237667e-02]), 'task': 'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH', 'funcalls': 90, 'nit': 59, 'warnflag': 0}
+122.95919802083874
+[-0.05309198828568753, 0.998164256210702, 1.0007247919049886, 2.8737764773857943, 6.365300091182592, 1.006210702376819, 0.9519225902130987, -0.05499094382686424, 1.1868488857218278, 1.0001423496123587, 0.0]
+
+
+LP MODEL OUTPUT:
+(nusiprop) astridaurora@LAPTOP-H6QI3I8N:~/HESE-7-year-data-release/HESE-7-year-data-release$ python HESE_fit.py
+Running fit
+Fit took 1542.5534834861755 seconds
+Best Fit -LLH:  122.92789302853468
+Best Fit Paramters:
+        cr_delta_gamma:         -0.05282593018858051
+        nunubar_ratio:  0.9981462730693877
+        anisotropy_scale:       1.000723878214125
+        astro_gamma:    2.7762273797524797
+        astro_norm:     6.265585095843488
+        conv_norm:      1.0036685935384948
+        epsilon_dom:    0.9520803131571901
+        epsilon_head_on:        -0.05568771019336483
+        muon_norm:      1.1895043671868821
+        kpi_ratio:      1.0000262733582987
+        prompt_norm:    0.0
+        beta:   0.09082969303229133
+{'grad': array([-0.00154187,  0.00049199,  0.00097954, -0.0009458 , -0.00057086,
+       -0.00237775, -0.0123779 ,  0.00099125, -0.00055583, -0.00104512,
+        0.02623515, -0.00058961]), 'task': 'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH', 'funcalls': 85, 'nit': 58, 'warnflag': 0}
+122.92789302853468
+[-0.05282593018858051, 0.9981462730693877, 1.000723878214125, 2.7762273797524797, 6.265585095843488, 1.0036685935384948, 0.9520803131571901, -0.05568771019336483, 1.1895043671868821, 1.0000262733582987, 0.0, 0.09082969303229133]"""
+
+
+
 import sys
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
@@ -12,21 +63,11 @@ import argparse
 import time
 
 import weighter
-import weighter_original
 import binning
 import data_loader
 import autodiff
 import likelihood
 import det_sys_weights
-import sys
-import os
-import os.path
-# Add nuSIprop to path (../../nuSIprop from this file's location)
-base_path = os.path.dirname(os.path.abspath(__file__))
-nuSIprop_path = os.path.abspath(os.path.join(base_path, '..', '..', 'nuSIprop'))
-if nuSIprop_path not in sys.path:
-    sys.path.insert(0, nuSIprop_path)
-import nuSIprop
 
 parser = argparse.ArgumentParser()
 
@@ -93,25 +134,19 @@ parser.add_argument(
     type=float,
     help="set initial atmospheric prompt neutrino flux normalization",
 )
-
-
-parser.add_argument(
-    "--model", default="spl", type=str,
-                    choices=["spl", "cutoff", "nusiprop"],
-                    help="astrophysical flux model: 'spl' (single power law), 'cutoff' (exponential cutoff), 'nusiprop' (nuSIprop)")
-parser.add_argument(
-    "--cutoff_energy", default=1e5, type=float,
-                    help="set initial cutoff energy parameter for exponential cutoff")
-parser.add_argument(
-    "--fix_cutoff_energy", action="store_true",
-                    help="fix cutoff energy parameter for exponential cutoff in fit")
+parser.add_argument("--beta", default=0.0, type=float,
+                    help="set initial log-parabola curvature")
+parser.add_argument("--cutoff_energy", default=0.0, type=float,
+                    help="set initial cutoff energy in GeV (0 means no cutoff)")
 parser.add_argument("--Mphi", default=5.0, type=float,
                     help="set initial Mphi parameter for nuSIprop (in GeV)")
 parser.add_argument("--g", default=0.1, type=float,
                     help="set initial g parameter for nuSIprop")
 parser.add_argument("--mntot", default=0.1, type=float,
                     help="set initial mntot parameter for nuSIprop")
-
+parser.add_argument("--model", default="spl", type=str,
+                    choices=["spl", "lp", "cutoff", "nusiprop"],
+                    help="astrophysical flux model: 'spl' (single power law), 'lp' (log-parabola), 'cutoff' (exponential cutoff), 'nusiprop' (nuSIprop)")
 
 
 parser.add_argument(
@@ -163,6 +198,10 @@ parser.add_argument(
     action="store_true",
     help="fix atmospheric prompt neutrino flux normalization in fit",
 )
+parser.add_argument("--fix_beta", action="store_true",
+                    help="fix log-parabola curvature in fit")
+parser.add_argument("--fix_cutoff_energy", action="store_true",
+                    help="fix cutoff energy in fit")
 parser.add_argument("--fix_Mphi", action="store_true",
                     help="fix Mphi parameter in fit (nuSIprop)")
 parser.add_argument("--fix_g", action="store_true",
@@ -173,7 +212,6 @@ parser.add_argument("--fix_mntot", action="store_true",
 args = parser.parse_args()
 
 livetime = 227708167.68
-#livetime = 12 * 365 * 24 * 3600
 
 parameter_names = [
     "cr_delta_gamma",
@@ -187,6 +225,7 @@ parameter_names = [
     "muon_norm",
     "kpi_ratio",
     "prompt_norm",
+    "beta",
     "cutoff_energy",
 ]
 
@@ -206,6 +245,7 @@ params = [
     args.muon_norm,
     args.kpi_ratio,
     args.prompt_norm,
+    args.beta,
     args.cutoff_energy,
 ]
 
@@ -222,39 +262,32 @@ params = np.array(params)
 # Second column is the lower bound
 # Third column is the upper bound
 priors = [
-    (0.0, 0.05, -np.inf, np.inf), # cr_delta_gamma, Gaussian prior
-    (1.0, 0.1, 0.0, 2.0), # nunubar_ratio, Gaussian prior
-    (1.0, 0.2, 0.0, 2.0), # anisotropy_scale, Gaussian prior
-    (None, None, -np.inf, np.inf), # astro_gamma, Uniform prior
-    (None, None, 0.0, np.inf), # astro_norm, Uniform prior
-    (1.0, 0.4, 0.0, np.inf), # conv_norm, Gaussian prior
-    (0.99, 0.1, 0.8, 1.25), # epsilon_dom, Gaussian prior
-    (0.0, 0.5, -3.82, 2.18), # epsilon_head_on, Gaussian prior
-    (1.0, 0.5, 0.0, np.inf), # muon_norm, Gaussian prior
-    (1.0, 0.1, 0.0, np.inf), # kpi_ratio, Gaussian prior
-    (None, None, 0.0, np.inf), # prompt_norm, Uniform prior
-    (None, None, 1e5, 1e7, "log_uniform"), # cutoff_energy, log-uniform prior
+    (-0.05, 0.05, -np.inf, np.inf),
+    (1.0, 0.1, 0.0, 2.0),
+    (1.0, 0.2, 0.0, 2.0),
+    (None, None, -np.inf, np.inf),
+    (None, None, 0.0, np.inf),
+    (1.0, 0.4, 0.0, np.inf),
+    (0.99, 0.1, 0.8, 1.25),
+    (0.0, 0.5, -3.82, 2.18),
+    (1.0, 0.5, 0.0, np.inf),
+    (1.0, 0.1, 0.0, np.inf),
+    (None, None, 0.0, np.inf),
+    (None, None, -np.inf, np.inf),
+    (None, None, 1e4, 1e7, "log_uniform"),  # cutoff_energy: log-uniform prior, bounds in GeV
 ]
 
 # Add nuSIprop priors if using nuSIprop model
 if args.model == "nusiprop":
     priors.extend([
         (None, None, 0.03, 100, "log_uniform"),  # Mphi: log-uniform in GeV
-        (None, None, 1e-4, 1.0, "log_uniform"),  # g: log-uniform
-        (None, None, 0.06, 0.15),                # mntot: uniform
+        (None, None, 1e-4, 1.0, "log_uniform"),      # g: log-uniform
+        (None, None, 0.06, 0.15),              # mntot: uniform
     ])
 
 # Check that all initial parameters are within prior bounds
-for param_name, param, prior in zip(parameter_names, params, priors):
-    param_min = prior[2]
-    param_max = prior[3]
-    if param < param_min or param > param_max:
-        error_message = (
-            "Given value for {}, {}, is outside of prior range [{},{}]".format(
-                param_name, param, param_min, param_max
-            )
-        )
-        raise ValueError(error_message)
+# Note: We'll check this after setting fixed parameters, so skip check for now
+# The check will be done after we set fixed values for model-specific parameters
 
 # is_fixed dictates what parameters will be kept fixed during the fit. By
 # default all values are set to False.
@@ -270,12 +303,59 @@ is_fixed = [
     args.fix_muon_norm,
     args.fix_kpi_ratio,
     args.fix_prompt_norm,
+    args.fix_beta,
     args.fix_cutoff_energy,
 ]
 
 # Add nuSIprop fix flags if using nuSIprop model
 if args.model == "nusiprop":
     is_fixed.extend([args.fix_Mphi, args.fix_g, args.fix_mntot])
+
+# Automatically fix irrelevant parameters based on model (unless explicitly set)
+# This ensures all model-specific parameters are fitted while irrelevant ones are fixed
+if not args.fix_beta and not args.fix_cutoff_energy:
+    if args.model == "spl":
+        # SPL: fix beta and cutoff_energy (not used)
+        beta_idx = parameter_names.index("beta")
+        cutoff_idx = parameter_names.index("cutoff_energy")
+        is_fixed[beta_idx] = True
+        is_fixed[cutoff_idx] = True
+        params[beta_idx] = 0.0
+        # Set cutoff_energy to lower bound of prior (1e4 GeV) when fixed
+        params[cutoff_idx] = priors[cutoff_idx][2]  # Use lower bound from prior
+    elif args.model == "lp":
+        # LP: fix cutoff_energy (not used), but fit beta
+        cutoff_idx = parameter_names.index("cutoff_energy")
+        is_fixed[cutoff_idx] = True
+        # Set cutoff_energy to lower bound of prior (1e4 GeV) when fixed
+        params[cutoff_idx] = priors[cutoff_idx][2]  # Use lower bound from prior
+    elif args.model == "cutoff":
+        # Cutoff: fix beta (not used), but fit cutoff_energy
+        beta_idx = parameter_names.index("beta")
+        is_fixed[beta_idx] = True
+        params[beta_idx] = 0.0
+    elif args.model == "nusiprop":
+        # nuSIprop: fix beta=0 and cutoff_energy (not used)
+        # For cutoff_energy, set to lower bound of prior since it's not used
+        beta_idx = parameter_names.index("beta")
+        cutoff_idx = parameter_names.index("cutoff_energy")
+        is_fixed[beta_idx] = True
+        is_fixed[cutoff_idx] = True
+        params[beta_idx] = 0.0
+        # Set cutoff_energy to lower bound of prior (1e4 GeV) when fixed
+        params[cutoff_idx] = priors[cutoff_idx][2]  # Use lower bound from prior
+
+# Check that all initial parameters are within prior bounds (after setting fixed values)
+for param_name, param, prior in zip(parameter_names, params, priors):
+    param_min = prior[2]
+    param_max = prior[3]
+    if param < param_min or param > param_max:
+        error_message = (
+            "Given value for {}, {}, is outside of prior range [{},{}]".format(
+                param_name, param, param_min, param_max
+            )
+        )
+        raise ValueError(error_message)
 
 if np.any(is_fixed):
     print("Fixing parameters")
@@ -294,7 +374,6 @@ mc_filenames = [
 ]
 mc = data_loader.load_mc(mc_filenames)
 data = data_loader.load_data("./resources/data/HESE_data.json")
-#data = data_loader.load_data("./resources/data/HESE12_data.json")
 
 # bin_data takes an MC/data numpy array as input, and returns
 # 0: the events rearranged such that events are grouped by analysis bins.
@@ -307,9 +386,10 @@ sorted_data, data_bin_slices = binning.bin_data(data)
 binned_data = np.array([len(sorted_data[data_bin]) for data_bin in data_bin_slices])
 
 # Sets up the Weighter class, that manages all the weight calculations
-#weight_maker = weighter.Weighter(sorted_mc)
+# Pass model type to weighter
 if args.model == "nusiprop":
     # Initialize nuSIprop object for nuSIprop model
+    import nuSIprop
     # Get initial values for nuSIprop
     # Note: astro_gamma is used as the spectral index (si) for nuSIprop
     astro_gamma_idx = parameter_names.index("astro_gamma")
@@ -325,29 +405,18 @@ if args.model == "nusiprop":
     
     # Initialize nuSIprop object with initial parameter values
     # The set_parameters() method will be called during the fit to update values
-    # nuSIprop.pyprop expects mphi in eV
+    # nuSIprop.pyprop expects mphi in GeV
     nuSIprop_obj = nuSIprop.pyprop(
         mphi=Mphi_val*1e6, g=g_val, si=si_val, norm=norm_base, mntot=mntot_val,
         majorana=True, non_resonant=True, normal_ordering=True,
         N_bins_E=300, lEmin=13, lEmax=16.01, zmax=5, flav=2, phiphi=False
     )
-    weight_maker = weighter_original.Weighter(sorted_mc, model=args.model, nuSIprop=nuSIprop_obj)
+    weight_maker = weighter.Weighter(sorted_mc, nuSIprop=nuSIprop_obj, model=args.model)
 else:
-    weight_maker = weighter_original.Weighter(sorted_mc, model=args.model)
-
-# For profile likelihood: exclude priors on fixed parameters
-# This ensures we compute max_η [L(θ_fixed, η) * π(η)] without π(θ_fixed)
-exclude_prior_indices = []
-for i, (name, fixed) in enumerate(zip(parameter_names, is_fixed)):
-    if fixed:
-        exclude_prior_indices.append(i)
+    weight_maker = weighter.Weighter(sorted_mc, nuSIprop=False, model=args.model)
 
 # A wrapper function that handles fits with fixed parameters
-def calcLLH_fitted_func(is_fitted, params, exclude_prior_indices):
-    # Track evaluation count and last LLH for progress printing
-    eval_count = [0]  # Use list to allow modification in nested function
-    last_llh = [None]  # Track last LLH to detect changes
-    
+def calcLLH_fitted_func(is_fitted, params):
     def func(
         fitted_params,
         parameter_names,
@@ -366,27 +435,13 @@ def calcLLH_fitted_func(is_fitted, params, exclude_prior_indices):
             binned_data,
             weights,
             livetime,
-            exclude_prior_indices=exclude_prior_indices,
         )
-        
-        # Print progress every 5 evaluations or when LLH changes significantly
-        eval_count[0] += 1
-        print_this = False
-        if eval_count[0] % 5 == 0:
-            print_this = True
-        elif last_llh[0] is not None and abs(llh - last_llh[0]) > 0.1:
-            print_this = True
-        
-        if print_this:
-            print(f"  Eval {eval_count[0]}: -LLH = {llh:.6f}")
-        
-        last_llh[0] = llh
         return llh, np.array(grads[0])[is_fitted]
 
     return func
 
 
-calcLLH = calcLLH_fitted_func(is_fitted, np.copy(params), exclude_prior_indices)
+calcLLH = calcLLH_fitted_func(is_fitted, np.copy(params))
 
 bounds_list = []
 fitted_params_list = []
@@ -417,11 +472,7 @@ else:
 start = time.time()
 print("Running fit")
 
-for idx, bounds in enumerate(bounds_list):
-    # Print which interval we're fitting
-    if not args.fix_epsilon_dom and len(bounds_list) == 2:
-        interval_name = "low [0.8, 0.99]" if idx == 0 else "high [0.99, 1.25]"
-        print(f"Fitting epsilon_DOM {interval_name} interval...")
+for bounds in bounds_list:
     # Function that runs the fit.
     fitted_params, llh, info = fmin_l_bfgs_b(
         calcLLH,
@@ -436,18 +487,13 @@ for idx, bounds in enumerate(bounds_list):
         ),
         bounds=bounds[is_fitted],
         m=10,
-        pgtol=1e-15,
+        pgtol=1e-18,
         factr=1e4,
     )
-
+    print('LLH: ', llh)
     fitted_params_list.append(fitted_params)
     llh_list.append(llh)
     info_list.append(info)
-    
-    # Print progress after each fit
-    if not args.fix_epsilon_dom and len(bounds_list) == 2:
-        interval_name = "low [0.8, 0.99]" if idx == 0 else "high [0.99, 1.25]"
-        print(f"  Completed {interval_name} interval: -LLH = {llh:.6f}")
 
 # Pick out the information from the fit with the lowest log likelihood.
 min_index = np.argmin(llh_list)
@@ -469,23 +515,3 @@ for param, BF_param in zip(parameter_names, BF_params):
 print(BF_info)
 print(BF_llh)
 print(BF_params.tolist())
-
-# Output both fit results for epsilon_DOM bi-modality
-if not args.fix_epsilon_dom and len(llh_list) == 2:
-    print("\n=== Both epsilon_DOM interval fits ===")
-    for i, (llh, fitted_params, info) in enumerate(zip(llh_list, fitted_params_list, info_list)):
-        interval_name = "low" if i == 0 else "high"
-        epsilon_range = "[0.8, 0.99]" if i == 0 else "[0.99, 1.25]"
-        print(f"\nFit {i+1} (epsilon_DOM {interval_name} interval, {epsilon_range}):")
-        print(f"  -LLH: {llh}")
-        fit_params = params[:]
-        fit_params[is_fitted] = fitted_params
-        print("  Parameters:")
-        for param, fit_param in zip(parameter_names, fit_params):
-            print("\t{}: \t{}".format(param, fit_param))
-        print(f"  Interval: {interval_name}")
-        print(f"  Epsilon_DOM range: {epsilon_range}")
-
-print('LLH list: ', llh_list)
-print('Fitted params list: ', fitted_params_list)
-print('Info list: ', info_list)

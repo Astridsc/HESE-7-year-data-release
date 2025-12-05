@@ -4,6 +4,7 @@ import os.path
 
 base_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, base_path + "/resources/external/")
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
@@ -11,6 +12,7 @@ import matplotlib.style
 
 #matplotlib.style.use("./resources/mpl/paper.mplstyle")
 from matplotlib.font_manager import FontProperties
+matplotlib.use("TkAgg") 
 import scipy.stats
 
 import data_loader
