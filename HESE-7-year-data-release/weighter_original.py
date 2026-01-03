@@ -54,7 +54,7 @@ class Weighter:
         if self.nuSIprop is None:
             raise ValueError("nuSIprop object must be provided when using model 'nusiprop'")
 
-        norm_base = 1e-18  # Base normalization inside nuSIprop (astro_norm scales later)
+        norm_base = 1  # Base normalization inside nuSIprop (astro_norm scales later)
         try:
             # nuSIprop expects mphi in eV, so convert from GeV to eV (×1e9),
             # keeping consistency with the existing implementation in weighter.py.
@@ -138,27 +138,44 @@ class Weighter:
         # Initialize gradient for base flux (before astro_norm scaling)
         flux_grad = np.zeros((len(flux_total), n_params))
 
-        # Relative finite-difference step
-        eps = 1e-4
-
-        # Mphi gradient
+        # Optimized finite-difference step sizes
+        # Using forward finite differences: (f(x+h) - f(x))/h
+        # For noisy functions (like nuSIprop), slightly larger steps reduce numerical noise
+        eps_base = 1e-3  # Optimized for better gradient accuracy with nuSIprop
+        
+        # Note: We use forward differences (positive perturbation) for simplicity.
+        # Central differences (f(x+h) - f(x-h))/(2h) would be more accurate (O(h^2) vs O(h))
+        # but require 2x more function evaluations (2 evolve() calls per gradient).
+        
+        # Mphi gradient (log-space parameter, use relative perturbation)
         if len(Mphi_idx) > 0:
-            Mphi_pert = Mphi_val * (1.0 + eps) if Mphi_val > 0 else Mphi_val + eps
+            eps = eps_base
+            Mphi_pert = Mphi_val * (1.0 + eps) if Mphi_val > 0 else Mphi_val + eps * max(abs(Mphi_val), 0.1)
             flux_pert = self._compute_nuSIprop_flux_scalar(
                 energy, Mphi_pert, g_val, si_val, mntot_val
             )
             flux_grad[:, Mphi_idx[0]] = (flux_pert - flux_total) / (Mphi_pert - Mphi_val)
 
-        # g gradient
+        # g gradient (log-space parameter, use relative perturbation)
         if len(g_idx) > 0:
-            g_pert = g_val * (1.0 + eps) if g_val > 0 else g_val + eps
+            eps = eps_base
+            # For very small g values, use absolute step to avoid numerical issues
+            # The max() ensures minimum step size even when g is near zero
+            if g_val > 1e-6:
+                g_pert = g_val * (1.0 + eps)  # Relative: 0.1% change
+            else:
+                # Absolute step with minimum: ensures step >= eps * 1e-6
+                g_pert = g_val + eps * max(abs(g_val), 1e-6)
             flux_pert = self._compute_nuSIprop_flux_scalar(
                 energy, Mphi_val, g_pert, si_val, mntot_val
             )
             flux_grad[:, g_idx[0]] = (flux_pert - flux_total) / (g_pert - g_val)
 
-        # mntot gradient
+        # mntot gradient (linear parameter, use absolute perturbation)
         if len(mntot_idx) > 0:
+            eps = eps_base
+            # max(abs(mntot_val), 0.01) ensures minimum step size
+            # 0.01 is ~10% of typical mntot value (~0.1), providing reasonable scale
             mntot_pert = mntot_val + eps * max(abs(mntot_val), 0.01)
             flux_pert = self._compute_nuSIprop_flux_scalar(
                 energy, Mphi_val, g_val, si_val, mntot_pert
@@ -167,8 +184,11 @@ class Weighter:
                 mntot_pert - mntot_val
             )
 
-        # astro_gamma (si) gradient
+        # astro_gamma (si) gradient (linear parameter, use absolute perturbation)
         if len(astro_gamma_idx) > 0:
+            eps = eps_base
+            # max(abs(si_val), 0.1) ensures minimum step size
+            # 0.1 is ~3-5% of typical si value (~2-3), providing reasonable scale
             si_pert = si_val + eps * max(abs(si_val), 0.1)
             flux_pert = self._compute_nuSIprop_flux_scalar(
                 energy, Mphi_val, g_val, si_pert, mntot_val
@@ -182,8 +202,13 @@ class Weighter:
 
         # Apply astro_norm using autodiff; this adds its own gradient component(s)
         flux_with_norm = ad.mul_grad(astro_norm, flux_base)
+        
+        # astro_norm is the 6 neutrino normalization so we need to convert it to the flux for 1 neutrino
+        # This matches the normalization used in flux_spl and flux_cutoff
+        astro_flux = 1e-18 / 6.0
+        flux = ad.mul(flux_with_norm, astro_flux)
 
-        return flux_with_norm
+        return flux
     
     def flux_cutoff(self, mc, astro_norm, astro_gamma, cutoff_energy):
         energy = mc["primaryEnergy"]
@@ -369,11 +394,12 @@ class Weighter:
         anisotropy_scale = p["anisotropy_scale"]
         nunubar_ratio = p["nunubar_ratio"]
         muon_norm = p["muon_norm"]
-        cutoff_energy = p["cutoff_energy"]
+        #cutoff_energy = p["cutoff_energy"]
 
         # Optional nuSIprop physics parameters (only needed for model="nusiprop").
         # If they are not included in parameter_names/params, we raise an error
         # when the nuSIprop model is requested, but leave other models untouched.
+        cutoff_energy = p.get("cutoff_energy", None)
         Mphi = p.get("Mphi", None)
         g = p.get("g", None)
         mntot = p.get("mntot", None)
@@ -393,7 +419,8 @@ class Weighter:
                 cutoff_energy=cutoff_energy,
             )
         elif self.model == "nusiprop":
-            print('Using nuSIprop model')
+            print('Using nuSIprop model, norm =', astro_norm[0], 'astro_gamma =', astro_gamma[0], 'Mphi =', Mphi[0], 'g =', g[0], 'mntot =', mntot[0])
+            gc.collect()
             if self.nuSIprop is None:
                 raise ValueError(
                     "nuSIprop model selected, but no nuSIprop object was provided "

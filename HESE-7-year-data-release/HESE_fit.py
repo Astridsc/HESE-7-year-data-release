@@ -10,8 +10,8 @@ import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
 import argparse
 import time
-
-import weighter
+import gc
+#import weighter
 import weighter_original
 import binning
 import data_loader
@@ -314,6 +314,8 @@ if args.model == "nusiprop":
     # Note: astro_gamma is used as the spectral index (si) for nuSIprop
     astro_gamma_idx = parameter_names.index("astro_gamma")
     si_val = params[astro_gamma_idx]  # Use astro_gamma as si
+    astro_norm_idx = parameter_names.index("astro_norm")
+    astro_norm_val = params[astro_norm_idx]
     Mphi_idx = parameter_names.index("Mphi")
     g_idx = parameter_names.index("g")
     mntot_idx = parameter_names.index("mntot")
@@ -321,16 +323,29 @@ if args.model == "nusiprop":
     g_val = params[g_idx]
     mntot_val = params[mntot_idx]
     # norm_base is used internally by nuSIprop, astro_norm scales it later
-    norm_base = 1e-18
+    #norm_base = 1e-18
+    print('before initializing nuSIprop object')
+    print(Mphi_val, g_val, mntot_val, si_val, astro_norm_val, si_val)
     
     # Initialize nuSIprop object with initial parameter values
     # The set_parameters() method will be called during the fit to update values
     # nuSIprop.pyprop expects mphi in eV
-    nuSIprop_obj = nuSIprop.pyprop(
-        mphi=Mphi_val*1e6, g=g_val, si=si_val, norm=norm_base, mntot=mntot_val,
-        majorana=True, non_resonant=True, normal_ordering=True,
-        N_bins_E=300, lEmin=13, lEmax=16.01, zmax=5, flav=2, phiphi=False
-    )
+    # nuSIprop looks for xsec files relative to current working directory,
+    # so we need to change to nuSIprop directory temporarily
+    gc.collect()
+    original_cwd = os.getcwd()
+    print('original_cwd', original_cwd)
+    try:
+        os.chdir(nuSIprop_path)
+        print('chdir to nuSIprop_path', nuSIprop_path)
+        nuSIprop_obj = nuSIprop.pyprop(
+            mphi=Mphi_val*1e6, g=g_val, si=si_val, norm=1e-18, mntot=mntot_val,
+            majorana=True, non_resonant=True, normal_ordering=True,
+            N_bins_E=200, lEmin=13-0.1, lEmax=16.01, zmax=4, flav=2, phiphi=True
+        )
+        print('initialized nuSIprop object')
+    finally:
+        os.chdir(original_cwd)
     weight_maker = weighter_original.Weighter(sorted_mc, model=args.model, nuSIprop=nuSIprop_obj)
 else:
     weight_maker = weighter_original.Weighter(sorted_mc, model=args.model)
@@ -436,8 +451,8 @@ for idx, bounds in enumerate(bounds_list):
         ),
         bounds=bounds[is_fitted],
         m=10,
-        pgtol=1e-15,
-        factr=1e4,
+        pgtol=1e-6 if args.model == "nusiprop" else 1e-15,  # Relaxed for nuSIprop (finite-diff gradients)
+        factr=1e7 if args.model == "nusiprop" else 1e4,      # Relaxed for nuSIprop
     )
 
     fitted_params_list.append(fitted_params)

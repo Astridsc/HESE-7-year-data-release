@@ -153,15 +153,31 @@ def calcEffLLH(data, weights, bin_slices):
         First element is the gradient of the effective log likelihood
     """
     llhs = []
-
+    
     for i, bin_slice in enumerate(bin_slices):
         if bin_slice.stop - bin_slice.start == 0:
             continue
         llhs.append(
             computeLEff(data[i], (weights[0][bin_slice], weights[1][bin_slice]))
         )
-
-    llhs = (np.array([llh[0] for llh in llhs]), np.array([llh[1] for llh in llhs]))
+    
+    # Ensure all gradient arrays have consistent shape
+    # Extract scalar LLH values and gradient arrays
+    llh_values = [llh[0] for llh in llhs]
+    llh_grads = [np.atleast_1d(llh[1]).flatten() for llh in llhs]
+    
+    # Check that all gradients have the same shape
+    """if len(llh_grads) > 0:
+        expected_shape = llh_grads[0].shape
+        for i, grad in enumerate(llh_grads):
+            if grad.shape != expected_shape:
+                raise ValueError(
+                    f"Inconsistent gradient shapes: bin {i} has shape {grad.shape}, "
+                    f"expected {expected_shape}. This may indicate a problem with "
+                    f"parameter gradients in different bins."
+                )"""
+    
+    llhs = (np.array(llh_values), np.array(llh_grads))
     llh = autodiff.sum(llhs)
 
     return llh

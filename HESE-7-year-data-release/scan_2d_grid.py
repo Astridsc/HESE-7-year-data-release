@@ -47,6 +47,10 @@ def _build_cmd(param1_name, param1_value, param2_name, param2_value, model="nusi
         f"--fix_{param2_name}",
     ]
     
+    # Fix cutoff_energy if model is not "cutoff" (to avoid fitting unused parameter)
+    if model != "cutoff":
+        cmd.append("--fix_cutoff_energy")
+    
     # Add any additional arguments
     for key, value in kwargs.items():
         if value is not None:

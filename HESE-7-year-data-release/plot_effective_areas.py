@@ -96,7 +96,7 @@ def plot_effective_areas(json_files=mc_filenames):
 
     # Get the MC generation information
     weight_over_flux_over_livetime = np.array(json_data["weightOverFluxOverLivetime"])
-    muon_weight_over_flux_over_livetime = np.array(json_data["muonWeightOverFluxOverLivetime"])
+    #muon_weight_over_flux_over_livetime = np.array(json_data["muonWeightOverFluxOverLivetime"])
 
     # Choose the energy binning
     #energy_bins = np.logspace(2, 7, 5 * 20 + 1)  # 1e2 to 1e7 with 20 bins per decade
@@ -185,8 +185,8 @@ def plot_effective_areas(json_files=mc_filenames):
         # Effective area is the sum of weightOverFluxOverLivetime, divided by bin width
         effective_area_cm2 = np.array(
             [
-                #np.sum(weight_over_flux_over_livetime[mask]) / bin_width
-                np.sum(muon_weight_over_flux_over_livetime[mask]) / bin_width
+                np.sum(weight_over_flux_over_livetime[mask]) / bin_width
+                #np.sum(muon_weight_over_flux_over_livetime[mask]) / bin_width
                 for mask, bin_width in zip(masks, custom_bin_widths)
             ]
         ) * factor
@@ -194,8 +194,8 @@ def plot_effective_areas(json_files=mc_filenames):
         # Compute the error on this quantity
         effective_area_cm2_error = np.array(
             [
-                #np.sqrt(np.sum(weight_over_flux_over_livetime[mask] ** 2)) / bin_width
-                np.sqrt(np.sum(muon_weight_over_flux_over_livetime[mask] ** 2)) / bin_width
+                np.sqrt(np.sum(weight_over_flux_over_livetime[mask] ** 2)) / bin_width
+                #np.sqrt(np.sum(muon_weight_over_flux_over_livetime[mask] ** 2)) / bin_width
                 for mask, bin_width in zip(masks, custom_bin_widths)
             ]
         ) * factor
@@ -226,8 +226,8 @@ def plot_effective_areas(json_files=mc_filenames):
         # Effective area is the sum of weightOverFluxOverLivetime, divided by bin width
         effective_area_cm2 = np.array(
             [
+                np.sum(weight_over_flux_over_livetime[mask]) / bin_width
                 #np.sum(weight_over_flux_over_livetime[mask]) / bin_width
-                np.sum(muon_weight_over_flux_over_livetime[mask]) / bin_width
                 for mask, bin_width in zip(masks, bin_widths_plot)
             ]
         ) * factor
@@ -237,8 +237,8 @@ def plot_effective_areas(json_files=mc_filenames):
         # Compute the error on this quantity
         effective_area_cm2_error = np.array(
             [
-                #np.sqrt(np.sum(weight_over_flux_over_livetime[mask] ** 2)) / bin_width
-                np.sqrt(np.sum(muon_weight_over_flux_over_livetime[mask] ** 2)) / bin_width
+                np.sqrt(np.sum(weight_over_flux_over_livetime[mask] ** 2)) / bin_width
+                #np.sqrt(np.sum(muon_weight_over_flux_over_livetime[mask] ** 2)) / bin_width
                 for mask, bin_width in zip(masks, bin_widths_plot)
             ]
         ) * factor
@@ -246,7 +246,7 @@ def plot_effective_areas(json_files=mc_filenames):
         # Convert to meters^2
         effective_area_m2 = effective_area_cm2 / (meter ** 2)
         effective_area_m2_error = effective_area_cm2_error / (meter ** 2)
-        print(effective_area_m2)
+        print('effective area: ', effective_area_m2[0:50])
 
         # Plot things only if they will appear on the plot
         if np.any(effective_area_m2 > 1e-4):
@@ -319,9 +319,9 @@ def plot_effective_areas(json_files=mc_filenames):
     #     "double_cascade": np.logspace(4, 7, 15+1)  # Different range for double_cascade
     # }
     morphology_energy_bins = {
-        "cascade": np.logspace(2, 7, 100+1),  # Default: same as global
-        "track": np.logspace(2, 7, 100+1),    # Default: same as global
-        "double_cascade": np.logspace(2, 7, 100+1)  # Default: same as global
+        "cascade": np.logspace(3, 7, 80+1),  # Default: same as global
+        "track": np.logspace(3, 7, 80+1),    # Default: same as global
+        "double_cascade": np.logspace(3, 7, 80+1)  # Default: same as global
     }
     
     line_style = "-"
@@ -330,19 +330,20 @@ def plot_effective_areas(json_files=mc_filenames):
     
     for morphology_index, morphology in enumerate(["cascade", "track", "double_cascade"]):
         color = cm((float(morphology_index) / float(3)) * 0.8 + 0.1)
-        #label = f"All flavors {morphology}"
-        label = f"Muons {morphology}"
+        label = f"All flavors {morphology}"
+        #label = f"Muons {morphology}"
         
         # Combine all flavors (use "nu" key which includes all neutrino types)
         # Or combine all 2nu flavors explicitly
-        """particle_mask_all_flavors = np.logical_or.reduce([
+        particle_mask_all_flavors = np.logical_or.reduce([
             particle_masks["2nue"],
             particle_masks["2numu"],
             particle_masks["2nutau"]
-        ])"""
+        ])
+        """
         particle_mask_all_flavors = np.logical_or.reduce([
             particle_masks['mu'],
-        ])
+        ])"""
         
         # Apply morphology mask
         particle_mask = np.logical_and(
