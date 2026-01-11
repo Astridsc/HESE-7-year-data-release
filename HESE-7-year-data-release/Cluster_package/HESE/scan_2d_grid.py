@@ -80,8 +80,8 @@ def _build_cmd(param1_name, param1_value, param2_name, param2_value, model="nusi
                 continue
             
             flag = f"--{key}"
-            # For boolean arguments that need values (like majorana, normal), always pass the value
-            if key in ("majorana", "normal"):
+            # For boolean arguments that need values (like majorana, normal, nuSI, HESE12), always pass the value
+            if key in ("majorana", "normal", "nuSI", "HESE12"):
                 cmd.append(flag)
                 cmd.append(str(value))
             elif isinstance(value, bool):
@@ -364,9 +364,12 @@ def main():
                        help="Use log spacing for param2")
     
     # Model and output
-    parser.add_argument("--model", type=str, default="nusiprop",
-                       choices=["spl", "cutoff", "nusiprop"],
+    parser.add_argument("--model", type=str, default="spl",
+                       choices=["spl", "cutoff", "bpl", "lp"],
                        help="Model to use")
+    """parser.add_argument("--model_type", type=str, default="nusiprop",
+                       choices=["nusiprop", "regular"],
+                       help="Model type to use for nuSIprop parameters")"""
     parser.add_argument("--output_dir", type=str, default="grid_scan_results",
                        help="Output directory for results")
     
@@ -412,6 +415,10 @@ def main():
                        help="Fix astro_gamma parameter to this value (requires --fix_astro_gamma)")
     parser.add_argument("--fix_astro_gamma", action="store_true",
                        help="Fix astro_gamma parameter in fit")
+    parser.add_argument("--nuSI", type=str, default=None,
+                       help="Enable nuSIprop secret interactions (True/False, default: True). If False, fixes Mphi, g, mntot and sets g=1e-30")
+    parser.add_argument("--HESE12", type=str, default=None,
+                       help="Use HESE12 data instead of HESE data (True/False, default: False)")
     
     # Retry options
     parser.add_argument("--max_retries", type=int, default=3,
@@ -521,6 +528,13 @@ def main():
             fit_kwargs["astro_gamma"] = args.astro_gamma
         if args.fix_astro_gamma:
             fit_kwargs["fix_astro_gamma"] = True
+        if args.nuSI is not None:
+            fit_kwargs["nuSI"] = args.nuSI
+        if args.HESE12 is not None:
+            fit_kwargs["HESE12"] = args.HESE12
+        
+        # Pass cluster_mode to HESE_fit.py so it uses the correct nuSIprop path
+        fit_kwargs["cluster_mode"] = True
         
         if args.no_retry:
             llh, params, fit_time = run_single_point(
@@ -542,10 +556,10 @@ def main():
             os.makedirs(args.output_dir, exist_ok=True)
             results_file = os.path.join(args.output_dir, args.results_file)
             results_file_abs = os.path.abspath(results_file)
-            
+        
             # Handle np.inf for JSON (JSON doesn't support infinity, use string)
             llh_json = float(llh) if (llh is not None and not np.isinf(llh)) else "inf"
-            
+        
             result = {
                 "job_index": args.job_index,
                 "grid_index": [int(i), int(j)],
@@ -561,11 +575,12 @@ def main():
             # Only include retry_info if retries were enabled
             if retry_info is not None:
                 result["retry_info"] = retry_info
-            
+        
             # Append to JSONL file (one JSON object per line, safe for parallel writes)
+            #model_type_json = args.model_type
             with open(results_file_abs, "a") as f:
                 f.write(json.dumps(result) + "\n")
-            
+        
             print(f"Result appended to {results_file_abs}")
         except Exception as e:
             print(f"ERROR: Failed to save result to {args.output_dir}: {e}")
@@ -647,6 +662,13 @@ def main():
                 fit_kwargs["astro_gamma"] = args.astro_gamma
             if args.fix_astro_gamma:
                 fit_kwargs["fix_astro_gamma"] = True
+            if args.nuSI is not None:
+                fit_kwargs["nuSI"] = args.nuSI
+            if args.HESE12 is not None:
+                fit_kwargs["HESE12"] = args.HESE12
+            
+            # Pass cluster_mode to HESE_fit.py so it uses the correct nuSIprop path
+            fit_kwargs["cluster_mode"] = True
             
             if args.no_retry:
                 llh, params, fit_time = run_single_point(

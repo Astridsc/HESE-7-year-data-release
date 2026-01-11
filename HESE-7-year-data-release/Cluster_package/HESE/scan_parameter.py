@@ -6,21 +6,20 @@ Scan over cutoff_energy values:
 python scan_parameter.py \
     --param cutoff_energy \
     --pmin 1e5 --pmax 1e7 --npoints 20 --log_space \
-    --model cutoff --plot_ts \
-    --output cutoff_scan.png \
+    --model cutoff \
     --save_data cutoff_scan.json
     
 Scan over astro_gamma values for SPL:
 python scan_parameter.py \
 --param astro_gamma \
 --pmin 2.0 --pmax 3.5 --npoints 30 \
---model spl --plot_ts 
+--model spl
 
 Scan over Mphi values for nuSIprop:
 python scan_parameter.py \
 --param Mphi \
 --pmin 0.1 --pmax 100 --npoints 20 --log_space \
---model nusiprop --plot_ts   
+--model cutoff
     """
 
 
@@ -28,11 +27,10 @@ python scan_parameter.py \
 
 
 """
-Generic script to scan over a single parameter value and plot LLH or TS vs that parameter.
+Generic script to scan over a single parameter value and compute LLH for each value.
 
 This is a generalization of scan_cutoff_energy.py. It:
   - Runs HESE_fit.py multiple times with different fixed values of a chosen parameter
-  - Optionally profiles a test statistic TS relative to the best-fit value of that parameter
   - Works for any model / parameter combination that HESE_fit.py understands
 
 This script can be used in two modes:
@@ -41,7 +39,7 @@ This script can be used in two modes:
 
 Example usage (standalone):
     python scan_parameter.py --param cutoff_energy --pmin 1e5 --pmax 1e7 \
-                              --npoints 20 --log_space --model cutoff --plot_ts
+                              --npoints 20 --log_space --model cutoff
 
 Example usage (cluster, single point):
     python scan_parameter.py --param cutoff_energy --pmin 1e5 --pmax 1e7 \
@@ -54,7 +52,6 @@ For SLURM job arrays:
 """
 
 import numpy as np
-#import matplotlib.pyplot as plt
 import subprocess
 import sys
 import argparse
@@ -83,7 +80,7 @@ def _build_cmd(
     param_value : float
         Value to set for the parameter.
     model : str
-        HESE_fit model string (e.g. 'spl', 'cutoff', 'nusiprop').
+        HESE_fit model string (e.g. 'spl', 'cutoff', 'bpl', 'lp').
     fix_param : bool
         If True, add the corresponding '--fix_<param_name>' flag so that the parameter
         is held fixed at 'param_value' in the fit.
@@ -105,7 +102,17 @@ def _build_cmd(
     hese_fit_path = os.path.join(base_path, "HESE_fit.py")
     
     # Use -u flag for unbuffered output so we see output immediately
-    cmd = [python_executable, "-u", hese_fit_path, "--model", model, f"--{param_name}", str(param_value)]
+    cmd = [python_executable, "-u", hese_fit_path, "--model", model]
+    
+    # Format parameter value - convert numpy types to Python native types first
+    # to avoid issues with repr() on numpy types
+    if hasattr(param_value, 'item'):  # numpy scalar
+        param_value = param_value.item()
+    elif hasattr(param_value, '__float__'):  # other numeric types
+        param_value = float(param_value)
+    
+    # Use str() which works correctly for all numeric types
+    cmd.extend([f"--{param_name}", str(param_value)])
 
     if fix_param:
         # Only add the fix flag if it exists in HESE_fit.py; if the flag is not defined,
@@ -113,11 +120,12 @@ def _build_cmd(
         cmd.append(f"--fix_{param_name}")
 
     # Add any additional arguments
+    # Skip the parameter we're scanning to avoid overriding it
     for key, value in kwargs.items():
-        if value is not None:
+        if value is not None and key != param_name and key != f"fix_{param_name}":
             flag = f"--{key}"
-            # For boolean arguments that need values (like majorana, normal), always pass the value
-            if key in ("majorana", "normal"):
+            # For boolean arguments that need values (like majorana, normal, nuSI, HESE12), always pass the value
+            if key in ("majorana", "normal", "nuSI", "HESE12"):
                 cmd.append(flag)
                 cmd.append(str(value))
             elif isinstance(value, bool):
@@ -278,7 +286,7 @@ def run_fit_at_value(
     param_value : float
         Parameter value to scan.
     model : str
-        Model string passed to HESE_fit.py (e.g. 'spl', 'cutoff', 'nusiprop').
+        Model string passed to HESE_fit.py (e.g. 'spl', 'cutoff', 'bpl', 'lp').
     fix_param : bool
         If True, keep the parameter fixed during the fit via '--fix_<param_name>'.
     python_executable : str or None
@@ -308,9 +316,9 @@ def run_fit_at_value(
         # Set working directory to script directory so relative paths work
         base_path = os.path.dirname(os.path.abspath(__file__))
         
-        # Only print command in debug mode (set via environment variable)
-        if os.environ.get('DEBUG_SCAN', '').lower() in ('1', 'true', 'yes'):
-            print('cmd: ', cmd)
+        # Always print command for debugging (can be disabled with DEBUG_SCAN=0)
+        if os.environ.get('DEBUG_SCAN', '1').lower() not in ('0', 'false', 'no'):
+            print('Executing command:', ' '.join(cmd))
         
         # Use Popen to read output in real-time and avoid hanging
         # Combine stderr into stdout to avoid deadlock
@@ -357,9 +365,9 @@ def main():
         description=(
             "Generic 1D profile-likelihood scan over any HESE_fit.py parameter.\n"
             "Example: scan_parameter.py --param cutoff_energy --pmin 1e5 --pmax 1e7 "
-            "--npoints 20 --model cutoff --plot_ts\n"
+            "--npoints 20 --model cutoff\n"
             "Another example (nuSIprop): scan_parameter.py --param Mphi --pmin 0.1 "
-            "--pmax 100 --npoints 15 --log_space --model nusiprop --plot_ts"
+            "--pmax 100 --npoints 15 --log_space --model cutoff"
         )
     )
 
@@ -398,32 +406,9 @@ def main():
     parser.add_argument(
         "--model",
         type=str,
-        default="cutoff",
-        choices=["spl", "cutoff", "nusiprop"],
+        default="spl",
+        choices=["spl", "cutoff", "bpl", "lp"],
         help="Astrophysical flux model (passed to HESE_fit.py).",
-    )
-    parser.add_argument(
-        "--plot_ts",
-        action="store_true",
-        help=(
-            "Plot TS instead of -LLH. TS is defined as 2 * (LLH_fixed - LLH_best), "
-            "where LLH_best is the best-fit LLH with the parameter free."
-        ),
-    )
-    parser.add_argument(
-        "--ref_llh",
-        type=float,
-        default=None,
-        help=(
-            "Reference best-fit -LLH value (for TS). If not provided and --plot_ts "
-            "is set, the script runs one fit with the parameter free to obtain it."
-        ),
-    )
-    parser.add_argument(
-        "--output",
-        type=str,
-        default="scan_param.png",
-        help="Output plot filename (default: scan_param.png).",
     )
     parser.add_argument(
         "--save_data",
@@ -460,12 +445,48 @@ def main():
         default="parameter_scan_results",
         help="Output directory for results (cluster mode)",
     )
+    parser.add_argument(
+        "--results_file",
+        type=str,
+        default="results.jsonl",
+        help="Name of the JSONL results file (default: results.jsonl)",
+    )
     
     # nuSIprop options
     parser.add_argument("--majorana", type=str, default=None,
                        help="Use Majorana (True) or Dirac (False) neutrinos for nuSIprop (default: True)")
     parser.add_argument("--normal", type=str, default=None,
                        help="Use normal (True) or inverted (False) mass ordering for nuSIprop (default: True)")
+    
+    # Optional fixed parameters
+    parser.add_argument("--Mphi", type=float, default=None,
+                       help="Fix Mphi parameter to this value (requires --fix_Mphi)")
+    parser.add_argument("--fix_Mphi", action="store_true",
+                       help="Fix Mphi parameter in fit")
+    parser.add_argument("--g", type=float, default=None,
+                       help="Fix g parameter to this value (requires --fix_g)")
+    parser.add_argument("--fix_g", action="store_true",
+                       help="Fix g parameter in fit")
+    parser.add_argument("--mntot", type=float, default=None,
+                       help="Fix mntot parameter to this value (requires --fix_mntot)")
+    parser.add_argument("--fix_mntot", action="store_true",
+                       help="Fix mntot parameter in fit")
+    parser.add_argument("--astro_gamma", type=float, default=None,
+                       help="Set initial value for astro_gamma parameter")
+    parser.add_argument("--nuSI", type=str, default=None,
+                       help="Enable nuSIprop secret interactions (True/False, default: True). If False, fixes Mphi, g, mntot and sets g=1e-30")
+    parser.add_argument("--HESE12", type=str, default=None,
+                       help="Use HESE12 data instead of HESE data (True/False, default: False)")
+    
+    # Optimization parameters
+    parser.add_argument("--pgtol", type=float, default=None,
+                       help="Gradient tolerance for L-BFGS-B optimizer")
+    parser.add_argument("--factr", type=float, default=None,
+                       help="Convergence factor for L-BFGS-B optimizer")
+    parser.add_argument("--m", type=int, default=None,
+                       help="Number of corrections used in L-BFGS-B")
+    parser.add_argument("--maxiter", type=int, default=None,
+                       help="Maximum number of iterations for L-BFGS-B")
 
     args = parser.parse_args()
 
@@ -493,6 +514,7 @@ def main():
         
         print(f"Running parameter scan point [{args.job_index}/{total_points-1}]: "
               f"{param_name}={value:.4g} (model='{args.model}')")
+        print(f"  Setting {param_name} to {value} and fixing it in the fit")
         
         start_time = time_module.time()
         # Prepare kwargs for HESE_fit.py arguments
@@ -501,6 +523,39 @@ def main():
             fit_kwargs["majorana"] = args.majorana
         if args.normal is not None:
             fit_kwargs["normal"] = args.normal
+        
+        # Add optional fixed parameters
+        if args.Mphi is not None:
+            fit_kwargs["Mphi"] = args.Mphi
+        if args.fix_Mphi:
+            fit_kwargs["fix_Mphi"] = True
+        if args.g is not None:
+            fit_kwargs["g"] = args.g
+        if args.fix_g:
+            fit_kwargs["fix_g"] = True
+        if args.mntot is not None:
+            fit_kwargs["mntot"] = args.mntot
+        if args.fix_mntot:
+            fit_kwargs["fix_mntot"] = True
+        if args.astro_gamma is not None:
+            fit_kwargs["astro_gamma"] = args.astro_gamma
+        if args.nuSI is not None:
+            fit_kwargs["nuSI"] = args.nuSI
+        if args.HESE12 is not None:
+            fit_kwargs["HESE12"] = args.HESE12
+        
+        # Pass cluster_mode to HESE_fit.py so it uses the correct nuSIprop path
+        fit_kwargs["cluster_mode"] = True
+        
+        # Add optimization parameters
+        if args.pgtol is not None:
+            fit_kwargs["pgtol"] = args.pgtol
+        if args.factr is not None:
+            fit_kwargs["factr"] = args.factr
+        if args.m is not None:
+            fit_kwargs["m"] = args.m
+        if args.maxiter is not None:
+            fit_kwargs["maxiter"] = args.maxiter
         
         llh, params, fit_results, fit_time = run_fit_at_value(
             param_name,
@@ -515,7 +570,7 @@ def main():
         # Save result to single shared file (JSONL format - one JSON object per line)
         # This allows parallel jobs to safely append without file locking
         os.makedirs(args.output_dir, exist_ok=True)
-        results_file = os.path.join(args.output_dir, "results.jsonl")
+        results_file = os.path.join(args.output_dir, args.results_file)
         
         # Handle None and np.nan for JSON
         llh_json = float(llh) if (llh is not None and not np.isnan(llh)) else None
@@ -551,44 +606,8 @@ def main():
     )
     print()
 
-    # If plotting TS and no reference LLH is provided, get best-fit LLH first
-    if args.plot_ts:
-        if args.ref_llh is None:
-            print(
-                f"Running fit with {param_name} free to get reference best-fit LLH..."
-            )
-            # Prepare kwargs for HESE_fit.py arguments
-            fit_kwargs = {}
-            if args.majorana is not None:
-                fit_kwargs["majorana"] = args.majorana
-            if args.normal is not None:
-                fit_kwargs["normal"] = args.normal
-            
-            ref_llh, _, _, ref_time = run_fit_at_value(
-                param_name,
-                param_value=values[0],  # value is ignored when fix_param=False
-                model=args.model,
-                fix_param=False,
-                python_executable=args.python,
-                **fit_kwargs
-            )
-            if ref_llh is None:
-                print("Error: Could not obtain reference LLH.")
-                sys.exit(1)
-            print(f"Reference best-fit -LLH (parameter free): {ref_llh:.6f}")
-            if ref_time is not None:
-                print(
-                    f"Reference fit took {ref_time:.1f} s ({ref_time/60:.1f} min)"
-                )
-            print()
-        else:
-            ref_llh = args.ref_llh
-    else:
-        ref_llh = None
-
     # Scan
     llh_values = []
-    ts_values = []
     all_params = []
     all_fit_results = []
     fit_times = []
@@ -609,6 +628,40 @@ def main():
         if args.normal is not None:
             fit_kwargs["normal"] = args.normal
 
+        # Add optional fixed parameters
+        if args.Mphi is not None:
+            fit_kwargs["Mphi"] = args.Mphi
+        if args.fix_Mphi:
+            fit_kwargs["fix_Mphi"] = True
+        if args.g is not None:
+            fit_kwargs["g"] = args.g
+        if args.fix_g:
+            fit_kwargs["fix_g"] = True
+        if args.mntot is not None:
+            fit_kwargs["mntot"] = args.mntot
+        if args.fix_mntot:
+            fit_kwargs["fix_mntot"] = True
+        if args.astro_gamma is not None:
+            fit_kwargs["astro_gamma"] = args.astro_gamma
+        if args.nuSI is not None:
+            fit_kwargs["nuSI"] = args.nuSI
+        if args.HESE12 is not None:
+            fit_kwargs["HESE12"] = args.HESE12
+
+        # Pass cluster_mode to HESE_fit.py so it uses the correct nuSIprop path
+        # (even in standalone mode, we want HESE_fit.py to use cluster paths when called from scan_parameter.py)
+        fit_kwargs["cluster_mode"] = True
+
+        # Add optimization parameters
+        if args.pgtol is not None:
+            fit_kwargs["pgtol"] = args.pgtol
+        if args.factr is not None:
+            fit_kwargs["factr"] = args.factr
+        if args.m is not None:
+            fit_kwargs["m"] = args.m
+        if args.maxiter is not None:
+            fit_kwargs["maxiter"] = args.maxiter
+
         llh, params, fit_results, fit_time = run_fit_at_value(
             param_name,
             param_value=value,
@@ -625,12 +678,7 @@ def main():
             all_fit_results.append(fit_results)
             fit_times.append(fit_time if fit_time is not None else point_elapsed)
 
-            if args.plot_ts and ref_llh is not None:
-                ts = 2.0 * (llh - ref_llh)
-                ts_values.append(ts)
-                print(f"  -LLH: {llh:.6f}, TS: {ts:.6f}")
-            else:
-                print(f"  -LLH: {llh:.6f}")
+            print(f"  -LLH: {llh:.6f}")
 
             # Timing info
             if fit_time is not None:
@@ -666,8 +714,6 @@ def main():
             llh_values.append(np.nan)
             all_fit_results.append([])
             fit_times.append(point_elapsed)
-            if args.plot_ts:
-                ts_values.append(np.nan)
 
         print()
 
@@ -678,33 +724,6 @@ def main():
     )
     if fit_times:
         print(f"Average time per point: {np.mean(fit_times)/60:.1f} min")
-
-    # Plot
-    fig, ax = plt.subplots(figsize=(10, 6))
-
-    if args.plot_ts and ref_llh is not None:
-        ax.plot(values, ts_values, "o-", linewidth=2, markersize=6)
-        ax.set_ylabel("Test Statistic TS", fontsize=12)
-        ax.axhline(
-            y=0, color="r", linestyle="--", alpha=0.5, label="TS=0 (best fit)"
-        )
-        ax.legend()
-    else:
-        ax.plot(values, llh_values, "o-", linewidth=2, markersize=6)
-        ax.set_ylabel("Best-fit -LLH", fontsize=12)
-
-    ax.set_xlabel(param_name, fontsize=12)
-    if args.log_space:
-        ax.set_xscale("log")
-    ax.grid(True, alpha=0.3)
-    ax.set_title(
-        f"Profile Likelihood Scan: {param_name} (model='{args.model}')",
-        fontsize=14,
-    )
-
-    plt.tight_layout()
-    plt.savefig(args.output, dpi=150)
-    print(f"Plot saved to {args.output}")
 
     # Save data if requested
     if args.save_data:
@@ -717,9 +736,6 @@ def main():
             "fit_times": fit_times,
             "model": args.model,
         }
-        if args.plot_ts and ref_llh is not None:
-            data["ts_values"] = ts_values
-            data["ref_llh"] = ref_llh
 
         with open(args.save_data, "w") as f:
             json.dump(data, f, indent=2)
@@ -729,7 +745,7 @@ def main():
     # (useful if you want to combine standalone and cluster results)
     if args.output_dir:
         os.makedirs(args.output_dir, exist_ok=True)
-        results_file = os.path.join(args.output_dir, "results.jsonl")
+        results_file = os.path.join(args.output_dir, args.results_file)
         # Clear file if it exists for a fresh run
         if os.path.exists(results_file):
             os.remove(results_file)

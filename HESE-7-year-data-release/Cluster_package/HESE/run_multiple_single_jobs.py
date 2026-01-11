@@ -124,7 +124,7 @@ def _parse_hese_fit_output(stdout):
 
 
 def run_single_fit(fixed_param_name=None, fixed_param_value=None,
-                   model="nusiprop", python_executable=None, **kwargs):
+                     model="nusiprop", python_executable=None, **kwargs):
     """Run HESE_fit.py with one parameter fixed (or none) and all others free."""
     cmd = _build_cmd_fit_all(model=model, python_executable=python_executable,
                              fixed_param_name=fixed_param_name, fixed_param_value=fixed_param_value, **kwargs)
@@ -270,23 +270,23 @@ def main():
         with open(metadata_file, "w") as f:
             json.dump(metadata, f, indent=2)
     
-    # Prepare kwargs for HESE_fit.py arguments
-    fit_kwargs = {}
-    if args.majorana is not None:
-        fit_kwargs["majorana"] = args.majorana
-    if args.normal is not None:
-        fit_kwargs["normal"] = args.normal
-    
-    # Add optimization parameters
-    if args.pgtol is not None:
-        fit_kwargs["pgtol"] = args.pgtol
-    if args.factr is not None:
-        fit_kwargs["factr"] = args.factr
-    if args.m is not None:
-        fit_kwargs["m"] = args.m
-    if args.maxiter is not None:
-        fit_kwargs["maxiter"] = args.maxiter
-    
+        # Prepare kwargs for HESE_fit.py arguments
+        fit_kwargs = {}
+        if args.majorana is not None:
+            fit_kwargs["majorana"] = args.majorana
+        if args.normal is not None:
+            fit_kwargs["normal"] = args.normal
+        
+        # Add optimization parameters
+        if args.pgtol is not None:
+            fit_kwargs["pgtol"] = args.pgtol
+        if args.factr is not None:
+            fit_kwargs["factr"] = args.factr
+        if args.m is not None:
+            fit_kwargs["m"] = args.m
+        if args.maxiter is not None:
+            fit_kwargs["maxiter"] = args.maxiter
+        
     # Add cluster_mode and output_dir to kwargs (will be passed to HESE_fit.py)
     fit_kwargs["cluster_mode"] = True
     fit_kwargs["output_dir"] = args.output_dir
@@ -399,7 +399,7 @@ def main():
                 model=args.model,
                 python_executable=args.python,
                 **fit_kwargs
-            )
+                )
             elapsed = time.time() - start_time
             
             if llh is not None and not np.isinf(llh):

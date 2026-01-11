@@ -1,0 +1,9 @@
+{
+  "pgtol": null,
+  "factr": 10000000.0,
+  "m": null,
+  "maxiter": null,
+  "model": "spl",
+  "param1_name": "Mphi",
+  "param2_name": "g"
+}

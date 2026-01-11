@@ -42,11 +42,33 @@ class Weighter:
         flux = ad.mul(flux, astro_flux)
 
         return flux
+    
+    def flux_lp(self, mc, astro_norm, astro_gamma, si2, pivot_point=1e5):
+        """
+        Log parabola flux model: norm * (E/E_pivot)^(-alpha - beta*log10(E/E_pivot))
+        Where alpha = astro_gamma and beta = si2
+        Formula: norm * (E/E_pivot)^(-astro_gamma - si2*log10(E/E_pivot))
+        """
+        energy = mc["primaryEnergy"]
+        e_scale = energy / pivot_point
+        # log10(E/E_pivot) - correct sign for the formula
+        log_ratio = np.log10(e_scale)
+        
+        # Exponent: -astro_gamma - si2*log10(e_scale)
+        exp1 = ad.mul(astro_gamma, -1.0)  # -astro_gamma
+        exp2 = ad.mul(si2, log_ratio)      # si2*log10(e_scale)
+        exp3 = ad.minus_grad(exp1, exp2)   # -astro_gamma - si2*log10(e_scale)
+        
+        spectrum = ad.pow_r(e_scale, exp3)
+        flux = ad.mul_grad(astro_norm, spectrum)
+        return flux
+    
+
 
     # ------------------------------
     # nuSIprop implementation
     # ------------------------------
-    def _compute_nuSIprop_flux_scalar(self, energy, Mphi_val, g_val, si_val, mntot_val):
+    def _compute_nuSIprop_flux_scalar(self, energy, Mphi_val, g_val, si_val, mntot_val, si2_val=None, E_break_val=None):
         """
         Helper function to compute nuSIprop flux for given scalar parameter values.
         Returns flux_total as a numpy array (no gradients).
@@ -64,6 +86,8 @@ class Weighter:
                 si=si_val,
                 norm=norm_base,
                 mntot=mntot_val,
+                si2=si2_val if si2_val is not None else 2.5,
+                E_break=1e9*E_break_val if E_break_val is not None else 1e9*1e5,
             )
             self.nuSIprop.evolve()
             flux_el = self.nuSIprop.interp_flux_el(energy)
@@ -84,7 +108,7 @@ class Weighter:
             print(f"Warning: nuSIprop calculation failed: {e}")
             return np.zeros(len(energy))
 
-    def nuSIprop_flux(self, mc, astro_norm, astro_gamma, Mphi, g, mntot):
+    def nuSIprop_flux(self, mc, astro_norm, astro_gamma, Mphi, g, mntot, si2=None, E_break=None):
         """
         Calculate nuSIprop flux with autodiff support, including finite-difference
         gradients for Mphi, g, mntot, and astro_gamma (used as the spectral index si).
@@ -104,7 +128,10 @@ class Weighter:
             Autodiff tuple [value, gradient] for g parameter
         mntot : tuple
             Autodiff tuple [value, gradient] for mntot parameter
-
+        si2 : tuple, optional
+            Autodiff tuple [value, gradient] for si2 parameter
+        E_break : tuple, optional
+            Autodiff tuple [value, gradient] for E_break parameter
         Notes
         -----
         - Only parameters with non‑zero gradient components contribute to the
@@ -116,7 +143,8 @@ class Weighter:
         g_val = g[0]
         mntot_val = mntot[0]
         si_val = astro_gamma[0]  # Use astro_gamma as spectral index (si)
-
+        si2_val = si2[0] if si2 is not None else 2.5
+        E_break_val = E_break[0] if E_break is not None else 1e5
         energy = mc["primaryEnergy"]
         # Convert to eV (as used in nuSIprop); energy is a regular array
         energy = energy * 1e9
@@ -131,7 +159,7 @@ class Weighter:
 
         # Base flux (no astro_norm scaling yet)
         flux_total = self._compute_nuSIprop_flux_scalar(
-            energy, Mphi_val, g_val, si_val, mntot_val
+            energy, Mphi_val, g_val, si_val, mntot_val, si2_val, E_break_val
         )
 
         # Determine which global parameter indices correspond to which nuSIprop params
@@ -141,23 +169,31 @@ class Weighter:
         Mphi_idx = np.where(Mphi[1] != 0)[0]
         g_idx = np.where(g[1] != 0)[0]
         mntot_idx = np.where(mntot[1] != 0)[0]
-
+        if self.model == "bpl":
+            si2_idx = np.where(si2[1] != 0)[0]
+            E_break_idx = np.where(E_break[1] != 0)[0]
+        elif self.model == "lp":
+            si2_idx = np.where(si2[1] != 0)[0]
+            E_break_idx = []
+        else:
+            si2_idx = []
+            E_break_idx = []
         # Initialize gradient for base flux (before astro_norm scaling)
         flux_grad = np.zeros((len(flux_total), n_params))
 
         # Relative finite-difference step
         # OBS! ÄNDRA FRÅN 1E-4 TILL 1E-3 FÖRSÄMRADE -LLH MED 10 PUNKTER SÅ TA INTE SÄMRE ÄN SÅ
-        eps = 1e-3
+        eps = 1e-4
 
         # Mphi gradient
         if len(Mphi_idx) > 0:
             Mphi_pert_up = Mphi_val * (1.0 + eps) if Mphi_val > 0 else Mphi_val + eps
             Mphi_pert_down = Mphi_val * (1.0 - eps) if Mphi_val > 0 else Mphi_val - eps
             flux_pert_up = self._compute_nuSIprop_flux_scalar(
-                energy, Mphi_pert_up, g_val, si_val, mntot_val
+                energy, Mphi_pert_up, g_val, si_val, mntot_val, si2_val, E_break_val
             )
             flux_pert_down = self._compute_nuSIprop_flux_scalar(
-                energy, Mphi_pert_down, g_val, si_val, mntot_val
+                energy, Mphi_pert_down, g_val, si_val, mntot_val, si2_val, E_break_val
             )
             flux_grad[:, Mphi_idx[0]] = (flux_pert_up - flux_pert_down) / (Mphi_pert_up - Mphi_pert_down)
 
@@ -166,39 +202,77 @@ class Weighter:
             g_pert_up = g_val * (1.0 + eps) if g_val > 0 else g_val + eps
             g_pert_down = g_val * (1.0 - eps) if g_val > 0 else g_val - eps
             flux_pert_up = self._compute_nuSIprop_flux_scalar(
-                energy, Mphi_val, g_pert_up, si_val, mntot_val
+                energy, Mphi_val, g_pert_up, si_val, mntot_val, si2_val, E_break_val
             )
             flux_pert_down = self._compute_nuSIprop_flux_scalar(
-                energy, Mphi_val, g_pert_down, si_val, mntot_val
+                energy, Mphi_val, g_pert_down, si_val, mntot_val, si2_val, E_break_val
             )
             flux_grad[:, g_idx[0]] = (flux_pert_up - flux_pert_down) / (g_pert_up - g_pert_down)
-
-        # mntot gradient
-        if len(mntot_idx) > 0:
-            mntot_pert_up = mntot_val + eps *10 * max(abs(mntot_val), 0.01)  # Multiply by 10 due to flat direction
-            mntot_pert_down = mntot_val - eps *10 * max(abs(mntot_val), 0.01)  # Multiply by 10 due to flat direction
+            
+        # E_break gradient
+        # Using same epsilon as above for the log-uniform parameters
+        if len(E_break_idx) > 0:
+            E_break_pert_up = E_break_val * (1.0 + eps) if E_break_val > 0 else E_break_val + eps
+            E_break_pert_down = E_break_val * (1.0 - eps) if E_break_val > 0 else E_break_val - eps
             flux_pert_up = self._compute_nuSIprop_flux_scalar(
-                energy, Mphi_val, g_val, si_val, mntot_pert_up
+                energy, Mphi_val, g_val, si_val, mntot_val, si2_val, E_break_pert_up
             )
             flux_pert_down = self._compute_nuSIprop_flux_scalar(
-                energy, Mphi_val, g_val, si_val, mntot_pert_down
+                energy, Mphi_val, g_val, si_val, mntot_val, si2_val, E_break_pert_down
+            )
+            flux_grad[:, E_break_idx[0]] = (flux_pert_up - flux_pert_down) / (
+                E_break_pert_up - E_break_pert_down
+            )
+
+        # mntot gradient
+        eps = 1e-3
+        if len(mntot_idx) > 0:
+            #mntot_pert_up = mntot_val + eps * max(abs(mntot_val), 0.01)  # Multiply by 10 due to flat direction
+            #mntot_pert_down = mntot_val - eps * max(abs(mntot_val), 0.01)  # Multiply by 10 due to flat direction
+            mntot_pert_up = mntot_val * (1.0 + eps) 
+            mntot_pert_down = mntot_val * (1.0 - eps)
+            flux_pert_up = self._compute_nuSIprop_flux_scalar(
+                energy, Mphi_val, g_val, si_val, mntot_pert_up, si2_val, E_break_val
+            )
+            flux_pert_down = self._compute_nuSIprop_flux_scalar(
+                energy, Mphi_val, g_val, si_val, mntot_pert_down, si2_val, E_break_val
             )
             flux_grad[:, mntot_idx[0]] = (flux_pert_up - flux_pert_down) / (
                 mntot_pert_up - mntot_pert_down
             )
 
         # astro_gamma (si) gradient
+        # For BPL model, si (astro_gamma) only affects E < E_break, so we need a larger perturbation
+        # to get reliable gradients, especially if most events are above E_break
+        eps = 1e-2 if self.model == "bpl" else 1e-3  # Larger eps for BPL to ensure gradient detection
         if len(astro_gamma_idx) > 0:
-            si_pert_up = si_val + eps * 0.1 * max(abs(si_val), 1.0)  # 
-            si_pert_down = si_val - eps * 0.1* max(abs(si_val), 1.0)
+            #si_pert_up = si_val + eps * 0.1 * max(abs(si_val), 1.0)  
+            #si_pert_down = si_val - eps * 0.1* max(abs(si_val), 1.0)
+            si_pert_up = si_val * (1.0 + eps)
+            si_pert_down = si_val * (1.0 - eps)
             flux_pert_up = self._compute_nuSIprop_flux_scalar(
-                energy, Mphi_val, g_val, si_pert_up, mntot_val
+                energy, Mphi_val, g_val, si_pert_up, mntot_val, si2_val, E_break_val
             )
             flux_pert_down = self._compute_nuSIprop_flux_scalar(
-                energy, Mphi_val, g_val, si_pert_down, mntot_val
+                energy, Mphi_val, g_val, si_pert_down, mntot_val, si2_val, E_break_val
             )
             flux_grad[:, astro_gamma_idx[0]] = (flux_pert_up - flux_pert_down) / (
                 si_pert_up - si_pert_down
+            )
+
+        eps = 1e-3
+        # si2 gradient
+        if len(si2_idx) > 0:
+            si2_pert_up = si2_val*(1.0 + eps) #* 0.1 * max(abs(si2_val), 1.0)
+            si2_pert_down = si2_val*(1.0 - eps) #* 0.1 * max(abs(si2_val), 1.0)
+            flux_pert_up = self._compute_nuSIprop_flux_scalar(
+                energy, Mphi_val, g_val, si_val, mntot_val, si2_pert_up, E_break_val
+            )
+            flux_pert_down = self._compute_nuSIprop_flux_scalar(
+                energy, Mphi_val, g_val, si_val, mntot_val, si2_pert_down, E_break_val
+            )
+            flux_grad[:, si2_idx[0]] = (flux_pert_up - flux_pert_down) / (
+                si2_pert_up - si2_pert_down
             )
 
         # Base flux as autodiff tuple (no astro_norm scaling yet)
@@ -401,35 +475,30 @@ class Weighter:
         Mphi = p.get("Mphi", None)
         g = p.get("g", None)
         mntot = p.get("mntot", None)
-        
+        si2 = p.get("si2", None)
+        E_break = p.get("E_break", None)
         cutoff_energy = p.get("cutoff_energy", None)
 
         # Calculate the expected neutrino flux from each component
-        if self.model == "spl":
-            #print('Using SPL model')
-            astro_fluxes = self.flux_spl(
-                self.mc, astro_norm=astro_norm, astro_gamma=astro_gamma
-            )
-        elif self.model == "cutoff":
-            #print('Using cutoff model')
-            astro_fluxes = self.flux_cutoff(
-                self.mc,
-                astro_norm=astro_norm,
-                astro_gamma=astro_gamma,
-                cutoff_energy=cutoff_energy,
-            )
-        elif self.model == "nusiprop":
-            #print('Using nuSIprop model')
-            if self.nuSIprop is None:
-                raise ValueError(
-                    "nuSIprop model selected, but no nuSIprop object was provided "
-                    "to Weighter(..., nuSIprop=<obj>)."
+        if self.nuSIprop == None:
+            if self.model == "spl":
+                #print('Using SPL model')
+                astro_fluxes = self.flux_spl(
+                    self.mc, astro_norm=astro_norm, astro_gamma=astro_gamma
                 )
-            if Mphi is None or g is None or mntot is None:
-                raise ValueError(
-                    "nuSIprop model requires 'Mphi', 'g', and 'mntot' parameters "
-                    "to be present in parameter_names."
+            elif self.model == "lp":
+                astro_fluxes = self.flux_lp(
+                    self.mc, astro_norm=astro_norm, astro_gamma=astro_gamma, si2=si2
                 )
+            elif self.model == "cutoff":
+                #print('Using cutoff model')
+                astro_fluxes = self.flux_cutoff(
+                    self.mc,
+                    astro_norm=astro_norm,
+                    astro_gamma=astro_gamma,
+                    cutoff_energy=cutoff_energy,
+                )
+        else:
             astro_fluxes = self.nuSIprop_flux(
                 self.mc,
                 astro_norm=astro_norm,
@@ -437,6 +506,8 @@ class Weighter:
                 Mphi=Mphi,
                 g=g,
                 mntot=mntot,
+                si2=si2,
+                E_break=E_break,
             )
         conv_fluxes = self.flux_conv(
             self.mc,

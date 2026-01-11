@@ -31,6 +31,7 @@ Examples:
 """
 
 import json
+import ast
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
@@ -41,17 +42,20 @@ from collections import defaultdict
 
 
 def find_results_files(search_dir, no_subdirs=False):
-    """Find all results.jsonl files in directory and optionally subdirectories."""
+    """Find all .jsonl files in directory and optionally subdirectories."""
     results_files = []
     search_path = Path(search_dir)
     
-    # Search in the directory itself
-    if (search_path / "results.jsonl").exists():
-        results_files.append(str(search_path / "results.jsonl"))
+    if not search_path.exists():
+        return results_files
     
-    # Search in subdirectories if requested
-    if not no_subdirs:
-        for jsonl_file in search_path.rglob("results.jsonl"):
+    # Search for all .jsonl files in the directory itself
+    if no_subdirs:
+        for jsonl_file in search_path.glob("*.jsonl"):
+            results_files.append(str(jsonl_file))
+    else:
+        # Search in subdirectories too
+        for jsonl_file in search_path.rglob("*.jsonl"):
             results_files.append(str(jsonl_file))
     
     return sorted(set(results_files))  # Remove duplicates and sort
@@ -165,8 +169,24 @@ def get_parameter_values(results, param_name, exclude_inf=False):
 
 
 def plot_correlation(results, param1_name, param2_name, exclude_inf=False, 
-                     color_by_llh=False, output_file=None, show_plot=True):
-    """Plot correlation between two parameters."""
+                     color_by_llh=False, output_file=None, show_plot=True,
+                     title=None, xlabel=None, ylabel=None, fill=False, y1_axis=None, y2_axis=None, color='mediumaquamarine', best_point=None, label_best_fit=None):
+    """Plot correlation between two parameters.
+    
+    Args:
+        best_point: If None, no best point is marked. If a dict, should contain:
+            - 'p1_name': parameter 1 name (str)
+            - 'p1_val': parameter 1 value
+            - 'p2_name': parameter 2 name (str)
+            - 'p2_val': parameter 2 value
+            - 'llh': LLH value
+            - 'label': label string for the best fit point
+            If True (for backward compatibility), automatically calculates from data.
+    
+    When best_point is not None:
+    - If color_by_llh=True, uses test statistic TS = 2*(LLH - min(LLH)) for colorbar
+    - Marks the best fit point on the plot with a red star
+    """
     
     # Extract values
     param1_values, llh1, idx1 = get_parameter_values(results, param1_name, exclude_inf)
@@ -243,13 +263,31 @@ def plot_correlation(results, param1_name, param2_name, exclude_inf=False,
     
     # Don't color by LLH if we're already plotting LLH on one axis
     if color_by_llh and not is_llh_plot and len(llh_array) > 0 and np.any(np.isfinite(llh_array)):
-        # Color by LLH
+        # Color by LLH or TS (test statistic)
         finite_mask = np.isfinite(llh_array)
         if np.any(finite_mask):
+            # Always calculate minimum LLH for TS calculation
+            
+            
+            # Calculate values for coloring
+            if best_point is not None:
+                # Use test statistic: TS = 2*(LLH - min(LLH))
+                # If best_point is a dict, use its llh value; otherwise use min from data
+                if isinstance(best_point, dict) and 'llh' in best_point:
+                    min_llh = best_point['llh']
+                #color_values = 2.0 * (llh_array[finite_mask] - min_llh)
+                #colorbar_label = 'TS = 2Δ(-LLH)'
+            else:
+                min_llh = np.min(llh_array[finite_mask])
+                # Use test statistic even when best_point is None
+                # Use minimum LLH from the data
+            color_values = 2.0 * (llh_array[finite_mask] - min_llh)
+            colorbar_label = r'$TS = 2\Delta(LLH-LLH_{min})$'
+            
             scatter = ax.scatter(
                 param1_array[finite_mask],
                 param2_array[finite_mask],
-                c=llh_array[finite_mask],
+                c=color_values,
                 cmap='viridis',
                 s=50,
                 alpha=0.6,
@@ -257,7 +295,7 @@ def plot_correlation(results, param1_name, param2_name, exclude_inf=False,
                 linewidths=0.5
             )
             cbar = plt.colorbar(scatter, ax=ax)
-            cbar.set_label('-LLH', rotation=270, labelpad=20)
+            cbar.set_label(colorbar_label, rotation=90, labelpad=20)
             
             # Also plot infinite LLH points in gray
             inf_mask = ~finite_mask
@@ -295,21 +333,73 @@ def plot_correlation(results, param1_name, param2_name, exclude_inf=False,
             linewidths=0.5
         )
     
-    # Set labels - use proper label for LLH
-    xlabel = "-LLH" if param1_name == "llh" else param1_name
-    ylabel = "-LLH" if param2_name == "llh" else param2_name
+    if fill:
+        # Use axhspan to fill the entire x-axis between y1_axis and y2_axis
+        ax.axhspan(y1_axis, y2_axis, color=color, alpha=0.3, zorder=0)
+    
+    # Mark best fit point if requested
+    if best_point is not None:
+        # If best_point is True, calculate from data
+        if best_point is True:
+            if len(llh_array) > 0 and np.any(np.isfinite(llh_array)):
+                finite_mask = np.isfinite(llh_array)
+                if np.any(finite_mask):
+                    best_idx = np.argmin(llh_array[finite_mask])
+                    best_point = {
+                        'p1_name': str(param1_name),
+                        'p1_val': param1_array[finite_mask][best_idx],
+                        'p2_name': str(param2_name),
+                        'p2_val': param2_array[finite_mask][best_idx],
+                        'llh': llh_array[finite_mask][best_idx],
+                        'label': f'Best fit: {param1_name} = {param1_array[finite_mask][best_idx]:.4g}, {param2_name} = {param2_array[finite_mask][best_idx]:.4g}, -LLH = {llh_array[finite_mask][best_idx]:.4g}'
+                    }
+        
+        # If best_point is a dict, use its values
+        if isinstance(best_point, dict):
+            p1_val = best_point.get('p1_val')
+            p2_val = best_point.get('p2_val')
+            
+            # Check if best_point dict has label_best_fit key (overrides parameter)
+            if 'label_best_fit' in best_point:
+                label_best_fit = best_point['label_best_fit']
+            
+            if label_best_fit is None:
+                # Check if best_point dict has a 'label' key
+                dict_label = best_point.get('label')
+                if dict_label is False:
+                    label_best_fit = None
+                elif dict_label is not None:
+                    label_best_fit = dict_label
+                else:
+                    label_best_fit = f"Best fit: {best_point.get('p1_name', param1_name)} = {p1_val:.4g}, {best_point.get('p2_name', param2_name)} = {p2_val:.4g}"
+            elif label_best_fit is False:
+                label_best_fit = None
+            
+            # Only add label if it's not None
+            #if label_best_fit is not None:
+            ax.scatter(p1_val, p2_val, color='red', s=100, label=label_best_fit, marker='*', linewidths=0.5, zorder=10)
+            """    ax.legend()
+            else:
+                # Plot without label (won't appear in legend)
+                ax.scatter(p1_val, p2_val, color='red', s=100, marker='*', linewidths=0.5, zorder=10)"""
+    # Set labels - use custom labels if provided, otherwise use defaults
+    if xlabel is None:
+        xlabel = "-LLH" if param1_name == "llh" else param1_name
+    if ylabel is None:
+        ylabel = "-LLH" if param2_name == "llh" else param2_name
     
     ax.set_xlabel(xlabel, fontsize=12)
     ax.set_ylabel(ylabel, fontsize=12)
     
-    # Title
-    if is_llh_plot:
-        other_param = param2_name if param1_name == "llh" else param1_name
-        ax.set_title(f'Parameter vs -LLH: {other_param}\n({len(param1_array)} points)', 
-                     fontsize=14)
-    else:
-        ax.set_title(f'Correlation: {param1_name} vs {param2_name}\n({len(param1_array)} points)', 
-                     fontsize=14)
+    # Title - use custom title if provided, otherwise use default
+    if title is None:
+        if is_llh_plot:
+            other_param = param2_name if param1_name == "llh" else param1_name
+            title = f'Parameter vs -LLH: {other_param}'
+        else:
+            title = f'Correlation: {param1_name} vs {param2_name}'
+    
+    ax.set_title(title, fontsize=14)
     
     ax.grid(True, alpha=0.3)
     
@@ -364,12 +454,34 @@ def interactive_mode(results):
         exclude_inf = input("Exclude failed fits (inf LLH)? [y/N]: ").lower().startswith('y')
         color_by_llh = input("Color by LLH value? [y/N]: ").lower().startswith('y')
         
+        best_point = input("Mark best fit point and use TS = 2*(LLH - min(LLH)) for colorbar (if coloring by LLH)? [y/N]: ").lower().startswith('y')
+        
         output_file = input("Output filename (press Enter for default): ").strip()
         if not output_file:
             output_file = f"correlation_{param1}_vs_{param2}.png"
         
+        """save = input("Save plot to file? [Y/n]: ").strip().lower()
+        save = save != 'n'  # Default to True unless user explicitly says 'n'
+        """
+        # Optional custom labels and title
+        title = input("Custom title (press Enter for default, supports LaTeX math like r'$M_\\phi$ vs $m_{tot}$'): ").strip()
+        if not title:
+            title = None
+        
+        xlabel = input("Custom x-axis label (press Enter for default, supports LaTeX math): ").strip()
+        if not xlabel:
+            xlabel = None
+        
+        ylabel = input("Custom y-axis label (press Enter for default, supports LaTeX math): ").strip()
+        if not ylabel:
+            ylabel = None
+        
+        # Convert boolean to appropriate value for best_point
+        best_point_val = True if best_point else None
         plot_correlation(results, param1, param2, exclude_inf=exclude_inf,
-                        color_by_llh=color_by_llh, output_file=output_file)
+                        color_by_llh=color_by_llh, output_file=output_file,
+                        show_plot=True, title=title, xlabel=xlabel, ylabel=ylabel,
+                        best_point=best_point_val)
         
     except (ValueError, KeyboardInterrupt):
         print("\nCancelled")
@@ -429,7 +541,16 @@ def main():
     )
     
     parser.add_argument(
-        "--output",
+        "--best_point",
+        type=str,
+        nargs='?',
+        const=True,
+        default=None,
+        help="Mark best fit point on plot. Use --best_point to auto-calculate, or --best_point '{\"p1_name\":\"mntot\",\"p1_val\":0.066,\"p2_name\":\"Mphi\",\"p2_val\":2.5,\"llh\":120.6}' to provide values (JSON format)"
+    )
+    
+    parser.add_argument(
+        "--output_file",
         type=str,
         default=None,
         help="Output filename for plot (default: auto-generated or show interactively)"
@@ -445,6 +566,55 @@ def main():
         "--no_show",
         action="store_true",
         help="Don't display plot (only save to file)"
+    )
+    
+    parser.add_argument(
+        "--title",
+        type=str,
+        default=None,
+        help="Custom plot title (supports LaTeX math, e.g., r'$M_\\phi$ vs $m_{tot}$')"
+    )
+    
+    parser.add_argument(
+        "--xlabel",
+        type=str,
+        default=None,
+        help="Custom x-axis label (supports LaTeX math, e.g., r'$M_\\phi$ (GeV)')"
+    )
+    
+    parser.add_argument(
+        "--ylabel",
+        type=str,
+        default=None,
+        help="Custom y-axis label (supports LaTeX math, e.g., r'$m_{tot}$ (eV)')"
+    )
+    
+    parser.add_argument(
+        "--fill",
+        action="store_true",
+        default=False,
+        help="Fill area between y1_axis and y2_axis"
+    )
+    
+    parser.add_argument(
+        "--y1_axis",
+        type=float,
+        default=None,
+        help="Lower y-axis value for fill area"
+    )
+    
+    parser.add_argument(
+        "--y2_axis",
+        type=float,
+        default=None,
+        help="Upper y-axis value for fill area"
+    )
+    
+    parser.add_argument(
+        "--label_best_fit",
+        type=str,
+        default=None,
+        help="Label for best fit point. Use 'False' (as string) to hide the label, or provide a custom label string"
     )
     
     args = parser.parse_args()
@@ -478,12 +648,16 @@ def main():
             print(f"Error: Results file not found: {args.results_file}")
             print(f"  Tried paths:")
             if args.search_dir:
-                print(f"    - {os.path.join(os.path.abspath(args.search_dir), args.results_file)}")
-            print(f"    - {os.path.abspath(args.results_file)}")
-            print(f"    - {os.path.join(os.getcwd(), args.results_file)}")
+                candidate = os.path.join(os.path.abspath(args.search_dir), args.results_file)
+                print(f"    - {candidate} (exists: {os.path.exists(candidate)})")
+            abs_path = os.path.abspath(args.results_file)
+            print(f"    - {abs_path} (exists: {os.path.exists(abs_path)})")
+            rel_path = os.path.join(os.getcwd(), args.results_file)
+            print(f"    - {rel_path} (exists: {os.path.exists(rel_path)})")
             print(f"  Current working directory: {os.getcwd()}")
             if args.search_dir:
                 print(f"  Search directory: {os.path.abspath(args.search_dir)}")
+                print(f"  Search directory exists: {os.path.exists(os.path.abspath(args.search_dir))}")
             return
         
         results_files = [results_file_path]
@@ -501,7 +675,7 @@ def main():
         results_files = find_results_files(search_dir, no_subdirs=no_subdirs)
         
         if len(results_files) == 0:
-            print(f"Error: No results.jsonl files found in {search_dir}")
+            print(f"Error: No .jsonl files found in {search_dir}")
             if no_subdirs:
                 print("  (Note: Only searching in the specified directory. Use --include_subdirs to search subdirectories)")
             return
@@ -524,21 +698,89 @@ def main():
             print(f"  - {param}")
         return
     
-    # Determine output filename
-    output_file = args.output
-    if args.param1 and args.param2 and not output_file:
-        output_file = f"correlation_{args.param1}_vs_{args.param2}.png"
-    
     # Plot or interactive mode
     if args.param1 and args.param2:
+        # Prompt for options not provided via command line
+        color_by_llh = args.color_by_llh
+        if not args.color_by_llh and not args.no_show:
+            # Only prompt if not in no_show mode (batch mode)
+            try:
+                color_input = input("Color by LLH value? [y/N]: ").strip().lower()
+                color_by_llh = color_input.startswith('y') if color_input else False
+            except (EOFError, KeyboardInterrupt):
+                color_by_llh = False
+        
+        output_file = args.output_file
+        if not output_file and not args.no_show:
+            # Only prompt if not in no_show mode (batch mode)
+            try:
+                output_input = input("Output filename (press Enter for default): ").strip()
+                if not output_input:
+                    output_file = f"correlation_{args.param1}_vs_{args.param2}.png"
+                else:
+                    output_file = output_input
+            except (EOFError, KeyboardInterrupt):
+                output_file = f"correlation_{args.param1}_vs_{args.param2}.png"
+        elif not output_file:
+            # In batch mode (no_show), use default filename
+            output_file = f"correlation_{args.param1}_vs_{args.param2}.png"
+        
+        # Parse best_point argument
+        best_point_val = None
+        if args.best_point:
+            if args.best_point is True:
+                # Flag used without value - auto-calculate
+                best_point_val = True
+            else:
+                # Try to parse as JSON dictionary first, then as Python literal
+                best_point_dict = None
+                try:
+                    best_point_dict = json.loads(args.best_point)
+                except json.JSONDecodeError:
+                    # Try parsing as Python literal (handles single quotes)
+                    try:
+                        best_point_dict = ast.literal_eval(args.best_point)
+                    except (ValueError, SyntaxError):
+                        pass
+                
+                if best_point_dict is not None and isinstance(best_point_dict, dict):
+                    # Map parameter names from the dict keys to p1_name, p2_name format
+                    # If keys are parameter names directly, use them
+                    if args.param1 in best_point_dict and args.param2 in best_point_dict:
+                        llh_val = best_point_dict.get('llh', best_point_dict.get('-llh', None))
+                        llh_str = f"{llh_val:.4g}" if llh_val is not None else "N/A"
+                        best_point_val = {
+                            'p1_name': str(args.param1),
+                            'p1_val': best_point_dict[args.param1],
+                            'p2_name': str(args.param2),
+                            'p2_val': best_point_dict[args.param2],
+                            'llh': llh_val,
+                            'label': f"Best fit: {args.param1} = {best_point_dict[args.param1]:.4g}, {args.param2} = {best_point_dict[args.param2]:.4g}, -LLH = {llh_str}"
+                        }
+                    else:
+                        # Assume it's already in the correct format
+                        best_point_val = best_point_dict
+                else:
+                    print(f"Warning: Could not parse --best_point as dictionary: {args.best_point}")
+                    print("Using auto-calculation instead")
+                    best_point_val = True
+        
         plot_correlation(
             results,
             args.param1,
             args.param2,
             exclude_inf=args.exclude_inf,
-            color_by_llh=args.color_by_llh,
+            color_by_llh=color_by_llh,
             output_file=output_file,
-            show_plot=not args.no_show
+            show_plot=not args.no_show,
+            title=args.title,
+            xlabel=args.xlabel,
+            ylabel=args.ylabel,
+            best_point=best_point_val,
+            fill=args.fill,
+            y1_axis=args.y1_axis,
+            y2_axis=args.y2_axis,
+            label_best_fit=False if args.label_best_fit and args.label_best_fit.lower() == 'false' else args.label_best_fit
         )
     else:
         interactive_mode(results)

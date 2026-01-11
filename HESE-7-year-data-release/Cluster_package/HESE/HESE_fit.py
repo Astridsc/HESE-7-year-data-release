@@ -23,14 +23,8 @@ import det_sys_weights
 import sys
 import os
 import os.path
-# Add nuSIprop to path (../../nuSIprop from this file's location)
-base_path = os.path.dirname(os.path.abspath(__file__))
-nuSIprop_path = os.path.abspath(os.path.join(base_path, '..', '..', 'nuSIprop-main-new'))   # KLUSTER PATH
-#nuSIprop_path = os.path.abspath(os.path.join(base_path, '..', '..', '..', '..', 'nuSIprop-main-new'))
-if nuSIprop_path not in sys.path:
-    sys.path.insert(0, nuSIprop_path)
-print('nuSIprop_path', nuSIprop_path)
-import nuSIprop
+# nuSIprop import will be handled after argument parsing to determine correct path
+
 
 parser = argparse.ArgumentParser()
 
@@ -98,23 +92,30 @@ parser.add_argument(
     help="set initial atmospheric prompt neutrino flux normalization",
 )
 
-
-parser.add_argument(
+parser.add_argument("--model_type", default="nusiprop", type=str,
+                    choices=["nusiprop", "regular"],
+                    help="model implemented with secret interactions: nusiprop, or without secret interactions (regular)")
+"""parser.add_argument(
     "--model", default="spl", type=str,
                     choices=["spl", "cutoff", "nusiprop"],
-                    help="astrophysical flux model: 'spl' (single power law), 'cutoff' (exponential cutoff), 'nusiprop' (nuSIprop)")
-parser.add_argument(
-    "--cutoff_energy", default=1e5, type=float,
-                    help="set initial cutoff energy parameter for exponential cutoff")
-parser.add_argument(
-    "--fix_cutoff_energy", action="store_true",
-                    help="fix cutoff energy parameter for exponential cutoff in fit")
-parser.add_argument("--Mphi", default=5.0, type=float,
+                    help="astrophysical flux model: 'spl' (single power law), 'cutoff' (exponential cutoff), 'nusiprop' (nuSIprop)")"""
+parser.add_argument("--model", default="spl", type=str,
+                    choices=["spl", "bpl", "lp", "cutoff"],
+                    help="astrophysical flux model: 'spl' (single power law), 'bpl' (broken power law), 'lp' (log-parabola), 'cutoff' (exponential cutoff)")
+
+parser.add_argument("--Mphi", default=1.0, type=float,
                     help="set initial Mphi parameter for nuSIprop (in GeV)")
-parser.add_argument("--g", default=0.1, type=float,
+parser.add_argument("--g", default=0.01, type=float,
                     help="set initial g parameter for nuSIprop")
 parser.add_argument("--mntot", default=0.1, type=float,
                     help="set initial mntot parameter for nuSIprop")
+parser.add_argument("--si2", default=2.0, type=float,
+                    help="set initial spectral index for broken power law or log-parabola")
+parser.add_argument("--E_break", default=5e4, type=float,
+                    help="set initial break energy for broken power law (in GeV)")
+parser.add_argument("--cutoff_energy", default=1e5, type=float,
+                    help="set initial cutoff energy parameter for exponential cutoff")
+
 def str_to_bool(v):
     """Convert string to boolean for argparse."""
     if isinstance(v, bool):
@@ -182,12 +183,19 @@ parser.add_argument(
     action="store_true",
     help="fix atmospheric prompt neutrino flux normalization in fit",
 )
+
 parser.add_argument("--fix_Mphi", action="store_true",
                     help="fix Mphi parameter in fit (nuSIprop)")
 parser.add_argument("--fix_g", action="store_true",
                     help="fix g parameter in fit (nuSIprop)")
 parser.add_argument("--fix_mntot", action="store_true",
                     help="fix mntot parameter in fit (nuSIprop)")
+parser.add_argument("--fix_cutoff_energy", action="store_true",
+                    help="fix cutoff energy parameter for exponential cutoff in fit")
+parser.add_argument("--fix_si2", action="store_true",
+                    help="fix spectral index for broken power law or log-parabola in fit")
+parser.add_argument("--fix_E_break", action="store_true",
+                    help="fix break energy for broken power law in fit")
 parser.add_argument("--pgtol", type=float, default=None,
                     help="gradient tolerance for L-BFGS-B optimizer (default: 1e-10 for nusiprop, 1e-15 otherwise)")
 parser.add_argument("--factr", type=float, default=None,
@@ -197,14 +205,31 @@ parser.add_argument("--m", type=int, default=None,
 parser.add_argument("--maxiter", type=int, default=None,
                     help="maximum number of iterations for L-BFGS-B (default: 500)")
 parser.add_argument("--cluster_mode", action="store_true", default=False,
-                    help="run in cluster mode and save results to JSONL file")
+                   help="run in cluster mode and save results to JSONL file")
 parser.add_argument("--output_dir", type=str, default=None,
-                    help="output directory for cluster mode results (required if --cluster_mode)")
+                   help="output directory for cluster mode results (required if --cluster_mode)")
+parser.add_argument("--nuSI", type=str_to_bool, default=True,
+                   help="Enable nuSIprop secret interactions (default: True). If False, fixes Mphi, g, mntot and sets g=1e-30")
+parser.add_argument("--HESE12", type=str_to_bool, default=False,
+                   help="Use HESE12 data instead of HESE data (default: False)")
 
 args = parser.parse_args()
 
-livetime = 227708167.68
-#livetime = 12 * 365 * 24 * 3600
+# Add nuSIprop to path - path depends on cluster_mode flag
+base_path = os.path.dirname(os.path.abspath(__file__))
+if args.cluster_mode:
+    # Cluster path (../../nuSIprop-main-new from this file's location)
+    nuSIprop_path = os.path.abspath(os.path.join(base_path, '..', '..', 'nuSIprop-main-new'))
+    print('cluster mode')
+else:
+    # Local/standalone path (../../../../nuSIprop-main-new from this file's location)
+    nuSIprop_path = os.path.abspath(os.path.join(base_path, '..', '..', '..', '..', 'nuSIprop-main-new'))
+
+if nuSIprop_path not in sys.path:
+    sys.path.insert(0, nuSIprop_path)
+print('nuSIprop_path', nuSIprop_path)
+import nuSIprop
+
 
 parameter_names = [
     "cr_delta_gamma",
@@ -221,8 +246,13 @@ parameter_names = [
 ]
 
 # Add nuSIprop parameters if using nuSIprop model
-if args.model == "nusiprop":
+if args.model_type == "nusiprop":
     parameter_names.extend(["Mphi", "g", "mntot"])
+    
+if args.model == "bpl":
+    parameter_names.extend(["si2", "E_break"])
+elif args.model == "lp":
+    parameter_names.extend(["si2"])
 elif args.model == "cutoff":
     parameter_names.extend(["cutoff_energy"])
 params = [
@@ -240,8 +270,15 @@ params = [
 ]
 
 # Add nuSIprop parameters if using nuSIprop model
-if args.model == "nusiprop":
-    params.extend([args.Mphi, args.g, args.mntot])  # Mphi in GeV
+if args.model_type == "nusiprop":
+    # If --nuSI False, override g to 1e-30
+    g_value = 1e-30 if not args.nuSI else args.g
+    params.extend([args.Mphi, g_value, args.mntot])  # Mphi in GeV
+    
+if args.model == "bpl":
+    params.extend([args.si2, args.E_break])
+elif args.model == "lp":
+    params.extend([args.si2])
 elif args.model == "cutoff":
     params.extend([args.cutoff_energy])
 params = np.array(params)
@@ -257,6 +294,7 @@ priors = [
     (1.0, 0.1, 0.0, 2.0), # nunubar_ratio, Gaussian prior
     (1.0, 0.2, 0.0, 2.0), # anisotropy_scale, Gaussian prior
     (None, None, 1.5, 3.5), # astro_gamma, Uniform prior
+    #(None, None, -np.inf, np.inf), # astro_gamma, Uniform prior
     (None, None, 0.0, np.inf), # astro_norm, Uniform prior
     (1.0, 0.4, 0.0, np.inf), # conv_norm, Gaussian prior
     (0.99, 0.1, 0.8, 1.25), # epsilon_dom, Gaussian prior
@@ -264,16 +302,33 @@ priors = [
     (1.0, 0.5, 0.0, np.inf), # muon_norm, Gaussian prior
     (1.0, 0.1, 0.0, np.inf), # kpi_ratio, Gaussian prior
     (None, None, 0.0, 4.0), # prompt_norm, Uniform prior
+    #(None, None, -np.inf, np.inf), # prompt_norm, Uniform prior
 ]
 
 # Add nuSIprop priors if using nuSIprop model
-if args.model == "nusiprop":
+if args.model_type == "nusiprop":
+    # Set g prior based on --nuSI flag
+    if args.nuSI:
+        g_prior = (None, None, 1e-4, 1, "log_uniform")  # g: log-uniform with wider range
+    else:
+        g_prior = (None, None, 1e-31, 1, "log_uniform")  # g: log-uniform with tighter range for no-SI case
+    
     priors.extend([
         (None, None, 0.02, 100+10, "log_uniform"),  # Mphi: log-uniform in GeV
-        (None, None, 1e-4, 1.01, "log_uniform"),  # g: log-uniform
-        (None, None, 0.1+0.0001, 0.15),                # mntot: uniform
+        g_prior,  # g: log-uniform (range depends on --nuSI)
+        (None, None, 0.06, 0.15),                # mntot: uniform
     ])
     
+if args.model == "bpl":
+    priors[3] = (None, None, 0.0, 3.5) # si1 / astro_gamma, Uniform prior. Change for bpl to match 'prior' from MESE paper?
+    priors.extend([
+        (None, None, 2.0, 3.5), # si2: uniform prior
+        (None, None, 1e4, 6e5), # E_break: log-uniform prior
+    ])
+elif args.model == "lp":
+    priors.extend([
+        (None, None, 1e-3, 2.0), # si2: uniform prior
+    ])
 elif args.model == "cutoff":
     priors.extend([
         (None, None, 1e5, 1e7, "log_uniform"), # cutoff_energy, log-uniform prior
@@ -308,8 +363,17 @@ is_fixed = [
 ]
 
 # Add nuSIprop fix flags if using nuSIprop model
-if args.model == "nusiprop":
-    is_fixed.extend([args.fix_Mphi, args.fix_g, args.fix_mntot])
+if args.model_type == "nusiprop":
+    # If --nuSI False, automatically fix Mphi, g, and mntot
+    if not args.nuSI:
+        is_fixed.extend([True, True, True])  # Fix Mphi, g, mntot
+    else:
+        is_fixed.extend([args.fix_Mphi, args.fix_g, args.fix_mntot])
+    
+if args.model == "bpl":
+    is_fixed.extend([args.fix_si2, args.fix_E_break])
+elif args.model == "lp":
+    is_fixed.extend([args.fix_si2])
 elif args.model == "cutoff":
     is_fixed.extend([args.fix_cutoff_energy])
 if np.any(is_fixed):
@@ -328,8 +392,12 @@ mc_filenames = [
     "./resources/data/HESE_mc_truth.json",
 ]
 mc = data_loader.load_mc(mc_filenames)
-data = data_loader.load_data("./resources/data/HESE_data.json")
-#data = data_loader.load_data("./resources/data/HESE12_data.json")
+if args.HESE12:
+    data = data_loader.load_data("./resources/data/HESE12_data.json")
+    livetime = 12 * 365 * 24 * 3600
+else:
+    data = data_loader.load_data("./resources/data/HESE_data.json")
+    livetime = 227708167.68
 
 # bin_data takes an MC/data numpy array as input, and returns
 # 0: the events rearranged such that events are grouped by analysis bins.
@@ -343,7 +411,7 @@ binned_data = np.array([len(sorted_data[data_bin]) for data_bin in data_bin_slic
 
 # Sets up the Weighter class, that manages all the weight calculations
 #weight_maker = weighter.Weighter(sorted_mc)
-if args.model == "nusiprop":
+if args.model_type == "nusiprop":
     # Initialize nuSIprop object for nuSIprop model
     # Get initial values for nuSIprop
     # Note: astro_gamma is used as the spectral index (si) for nuSIprop
@@ -353,8 +421,21 @@ if args.model == "nusiprop":
     g_idx = parameter_names.index("g")
     mntot_idx = parameter_names.index("mntot")
     Mphi_val = params[Mphi_idx]  # Already in GeV
-    g_val = params[g_idx]
+    # If --nuSI False, use 1e-30 for g (already set in params, but ensure consistency)
+    g_val = 1e-30 if not args.nuSI else params[g_idx]
     mntot_val = params[mntot_idx]
+    if args.model == "bpl":
+        si2_idx = parameter_names.index("si2")
+        si2_val = params[si2_idx]
+        E_break_idx = parameter_names.index("E_break")
+        E_break_val = params[E_break_idx]
+    elif args.model == "lp":
+        si2_idx = parameter_names.index("si2")
+        si2_val = params[si2_idx]
+    elif args.model == "cutoff":
+        cutoff_energy_idx = parameter_names.index("cutoff_energy")
+        cutoff_energy_val = params[cutoff_energy_idx]
+
     # norm_base is used internally by nuSIprop, astro_norm scales it later
     norm_base = 1e-18
     
@@ -363,6 +444,14 @@ if args.model == "nusiprop":
     # nuSIprop.pyprop expects mphi in eV
     # nuSIprop looks for xsec files relative to current working directory,
     # so we need to change to nuSIprop directory temporarily
+    if args.model == "bpl":
+        flux_model = 1
+    elif args.model == "lp":
+        flux_model = 2
+    elif args.model == "cutoff":
+        flux_model = 3
+    else:
+        flux_model = 0
     gc.collect()
     original_cwd = os.getcwd()
     try:
@@ -370,7 +459,10 @@ if args.model == "nusiprop":
         nuSIprop_obj = nuSIprop.pyprop(
             mphi=Mphi_val*1e6, g=g_val, si=si_val, norm=norm_base, mntot=mntot_val,
             majorana=args.majorana, non_resonant=True, normal_ordering=args.normal,
-            N_bins_E=200, lEmin=13-0.1, lEmax=16.01, zmax=5, flav=2, phiphi=True
+            N_bins_E=200, lEmin=13-0.1, lEmax=16.01, zmax=5, flav=2, phiphi=True,
+            flux_model=flux_model,
+            si2=si2_val if args.model in ["bpl", "lp"] else 2.5,
+            E_break=E_break_val if args.model == "bpl" else 1e5,
         )
     finally:
         os.chdir(original_cwd)
@@ -413,8 +505,8 @@ def calcLLH_fitted_func(is_fitted, params, exclude_prior_indices):
             exclude_prior_indices=exclude_prior_indices,
         )
         #print('llh', llh)
-        #print('grads', grads)
-        
+        print('grads', grads)
+        print('params', params)
         # Print progress every 5 evaluations or when LLH changes significantly
         eval_count[0] += 1
         print_this = False
@@ -476,20 +568,9 @@ for idx, bounds in enumerate(bounds_list):
     # Function that runs the fit.
     # Use provided values or defaults based on model
     pgtol = args.pgtol if args.pgtol is not None else (1e-6 if args.model == "nusiprop" else 1e-15)
-    factr = args.factr if args.factr is not None else (100 if args.model == "nusiprop" else 1e4)
-    m = args.m if args.m is not None else 20
+    factr = args.factr if args.factr is not None else (10 if args.model == "nusiprop" else 1e4)
+    m = args.m if args.m is not None else 10
     maxiter = args.maxiter if args.maxiter is not None else 500
-    """if idx == 1 and not args.fix_epsilon_dom:
-        # Find the correct index of epsilon_dom in the full parameters array
-        epsilon_dom_idx_full = parameter_names.index("epsilon_dom")
-        print(f"Fitting high epsilon_DOM interval, setting epsilon_dom initial value to 1.1")
-        print(f'epsilon_dom index in full params: {epsilon_dom_idx_full}')
-        print(f'params[is_fitted] before: {params[is_fitted]}')
-        print(f'params[epsilon_dom_idx_full] before: {params[epsilon_dom_idx_full]}')
-        # Modify params directly at the full index (not through boolean indexing which creates a copy)
-        params[epsilon_dom_idx_full] = 1.25
-        print(f'params[epsilon_dom_idx_full] after: {params[epsilon_dom_idx_full]}')
-        print(f'params[is_fitted] after setting epsilon_dom to 1.1: {params[is_fitted]}')"""
     fitted_params, llh, info = fmin_l_bfgs_b(
         calcLLH,
         x0=params[is_fitted],

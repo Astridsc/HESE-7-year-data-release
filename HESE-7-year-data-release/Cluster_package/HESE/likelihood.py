@@ -182,7 +182,7 @@ def calcEffLLH(data, weights, bin_slices):
 
 def calcLLH(
     params, parameter_names, priors, bin_slices, data, weighter_maker, livetime,
-    exclude_prior_indices=None, original_data=None, apply_reco_corrections=False
+    exclude_prior_indices=None
 ):
     """
     Computes and returns the total negative log likelihood
@@ -205,49 +205,6 @@ def calcLLH(
     """
     if exclude_prior_indices is None:
         exclude_prior_indices = []
-    
-    # Apply reconstruction corrections if needed
-    # Note: bin_slices are for MC, data is binned_data (counts per bin)
-    # We need to re-bin the data to match the MC bin structure
-    if apply_reco_corrections:
-        if original_data is None:
-            raise ValueError("original_data must be provided when apply_reco_corrections=True")
-        import reco_corrections
-        import binning
-        
-        # Get reconstruction correction parameters
-        if "reco_energy_scale" in parameter_names:
-            energy_scale_idx = parameter_names.index("reco_energy_scale")
-            energy_scale = params[energy_scale_idx]
-        else:
-            energy_scale = 1.0
-        
-        if "reco_zenith_shift" in parameter_names:
-            zenith_shift_idx = parameter_names.index("reco_zenith_shift")
-            zenith_shift = params[zenith_shift_idx]
-        else:
-            zenith_shift = 0.0
-        
-        # Apply corrections and re-bin DATA (not MC - MC is never modified)
-        # Note: We need to use the same binning as MC, so we use bin_data which
-        # uses the same bin structure. The bin_slices parameter is for MC weights,
-        # so we keep it unchanged. We just update the data counts.
-        # IMPORTANT: original_data is never modified - apply_reco_corrections creates a copy
-        corrected_data = reco_corrections.apply_reco_corrections(
-            original_data, energy_scale=energy_scale, zenith_shift=zenith_shift
-        )
-        sorted_data, data_bin_slices = binning.bin_data(corrected_data)
-        
-        # Count events in each bin (this is what 'data' should be)
-        # Note: data_bin_slices should match mc_bin_slices in structure
-        # (same number of bins, same bin edges)
-        binned_data = np.array([len(sorted_data[dbin]) for dbin in data_bin_slices])
-        
-        # Update data (binned counts)
-        # bin_slices stays the same (it's for MC weights)
-        data = binned_data
-    elif data is None:
-        raise ValueError("data must be provided when apply_reco_corrections=False")
 
     weights = weighter_maker.get_weights(livetime, parameter_names, params)
 
@@ -280,12 +237,12 @@ def calcLLH(
         grad = np.zeros(shape=len(params)).astype(float)
         grad[i] = 1.0
 
-        if is_log_uniform:
+        """if is_log_uniform:
             # Log-uniform prior: log(p(x)) = -log(x) + constant
             # This gives uniform sampling in log space
             LLH = autodiff.mul(autodiff.log((param, grad)), -1.0)
-            PriorLLH = autodiff.plus_grad(PriorLLH, LLH)
-        elif mu != None:
+            PriorLLH = autodiff.plus_grad(PriorLLH, LLH)"""
+        if mu != None:
             # Gaussian prior
             LLH = autodiff.normal_log_pdf((param, grad), mu, sigma)
             PriorLLH = autodiff.plus_grad(PriorLLH, LLH)

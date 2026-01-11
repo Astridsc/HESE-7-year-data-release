@@ -2,8 +2,8 @@
 """
 Combine results from cluster grid scan into a single summary.json file.
 
-This script reads results.jsonl (created by scan_2d_grid.py in cluster mode)
-and creates a summary.json file with the full llh_grid.
+This script reads results.jsonl (created by scan_2d_grid.py or scan_parameter.py in cluster mode)
+and creates a summary.json file with the full llh_grid (2D) or llh_array (1D).
 """
 
 import json
@@ -13,10 +13,9 @@ import os
 from pathlib import Path
 
 
-def combine_results(results_file, output_dir, n1, n2):
-    """Read JSONL results and create summary.json with llh_grid."""
+def combine_results(results_file, output_dir, n1, n2=None):
+    """Read JSONL results and create summary.json with llh_grid (2D) or llh_array (1D)."""
     
-    results_file = os.path.join(output_dir, "results.jsonl")
     summary_file = os.path.join(output_dir, "summary.json")
     
     if not os.path.exists(results_file):
@@ -40,103 +39,217 @@ def combine_results(results_file, output_dir, n1, n2):
     
     print(f"Found {len(results)} results")
     
-    # Get grid parameters from first result
+    # Detect if this is a 1D or 2D scan
     first_result = results[0]
-    param1_name = first_result["param1_name"]
-    param2_name = first_result["param2_name"]
-    model = first_result["model"]
+    has_param_name = "param_name" in first_result
+    has_param1_name = "param1_name" in first_result
     
-    # Initialize grid arrays
-    llh_grid = np.full((n1, n2), np.inf)
-    fit_times = np.full((n1, n2), np.nan)
-    retry_info_grid = {}  # Store retry info by grid index
+    # Determine scan type
+    if n2 is None:
+        # 1D scan expected
+        if not has_param_name:
+            print(f"Error: n2 not provided but results appear to be 2D scan (found param1_name)")
+            print(f"Please provide --n2 for 2D scans")
+            return
+        is_1d = True
+    else:
+        # 2D scan expected
+        if not has_param1_name:
+            print(f"Error: n2 provided but results appear to be 1D scan (found param_name)")
+            print(f"Please omit --n2 for 1D scans")
+            return
+        is_1d = False
     
-    # Extract parameter values (assuming they match the grid)
-    param1_values = []
-    param2_values = []
-    
-    # Fill in the grid
-    for result in results:
-        job_idx = result["job_index"]
-        i, j = result["grid_index"]
-        grid_key = (i, j)
+    if is_1d:
+        # 1D parameter scan
+        param_name = first_result["param_name"]
+        model = first_result["model"]
         
-        # Convert "inf" string back to np.inf for processing
-        llh_val = result["llh"]
-        if llh_val == "inf" or (isinstance(llh_val, float) and np.isinf(llh_val)):
-            llh_grid[i, j] = np.inf
-        else:
-            llh_grid[i, j] = float(llh_val)
+        # Initialize 1D arrays
+        llh_array = np.full(n1, np.inf)
+        fit_times = np.full(n1, np.nan)
+        retry_info_dict = {}  # Store retry info by job_index
         
-        fit_times[i, j] = result["fit_time"]
+        # Extract parameter values
+        param_values = []
         
-        # Store retry info if available
-        if "retry_info" in result:
-            retry_info_grid[grid_key] = result["retry_info"]
+        # Fill in the array
+        for result in results:
+            job_idx = result["job_index"]
+            
+            # Bounds check
+            if job_idx >= n1:
+                print(f"Warning: job_index {job_idx} >= n1 ({n1}), skipping")
+                continue
+            
+            # Convert "inf" string back to np.inf for processing
+            llh_val = result["llh"]
+            if llh_val == "inf" or (isinstance(llh_val, float) and np.isinf(llh_val)) or llh_val is None:
+                llh_array[job_idx] = np.inf
+            else:
+                llh_array[job_idx] = float(llh_val)
+            
+            fit_times[job_idx] = result["fit_time"]
+            
+            # Store retry info if available
+            if "retry_info" in result:
+                retry_info_dict[job_idx] = result["retry_info"]
+            
+            # Collect unique parameter values
+            p_val = result["param_value"]
+            if p_val not in param_values:
+                param_values.append(p_val)
         
-        # Collect unique parameter values
-        p1_val = result["param1_value"]
-        p2_val = result["param2_value"]
-        if p1_val not in param1_values:
-            param1_values.append(p1_val)
-        if p2_val not in param2_values:
-            param2_values.append(p2_val)
+        # Sort parameter values
+        param_values = sorted(param_values)
+        
+        # Convert np.inf to "inf" string for JSON compatibility
+        llh_array_json = [("inf" if np.isinf(val) else val) for val in llh_array.tolist()]
+        
+        # Convert fit_times (nan to None for JSON)
+        fit_times_json = [(None if np.isnan(val) else val) for val in fit_times.tolist()]
+        
+        # Create retry info summary
+        retry_summary = {
+            "retry_attempted": [retry_info_dict.get(i, {}).get("retry_attempted", False) 
+                               for i in range(n1)],
+            "retry_succeeded": [retry_info_dict.get(i, {}).get("retry_succeeded", False) 
+                              for i in range(n1)],
+            "retry_attempt": [retry_info_dict.get(i, {}).get("retry_attempt", 0) 
+                            for i in range(n1)],
+        }
+        
+        # Create summary
+        summary = {
+            "param_name": param_name,
+            "param_values": param_values,
+            "llh_array": llh_array_json,
+            "fit_times": fit_times_json,
+            "model": model,
+            "total_points": n1,
+            "completed_points": len(results),
+            "retry_info": retry_summary,
+        }
+        
+        # Save summary
+        with open(summary_file, "w") as f:
+            json.dump(summary, f, indent=2)
+        
+        print(f"Summary saved to {summary_file}")
+        print(f"  Grid size: {n1} points")
+        print(f"  Completed: {len(results)} points")
+        print(f"  Missing: {n1 - len(results)} points")
+        
+        # Count successful vs failed fits
+        successful = np.sum(~np.isinf(llh_array))
+        failed = np.sum(np.isinf(llh_array))
+        print(f"  Successful fits: {successful}")
+        print(f"  Failed fits: {failed}")
+        
+        # Count retry statistics
+        if retry_info_dict:
+            retry_attempted = sum(1 for info in retry_info_dict.values() if info.get("retry_attempted", False))
+            retry_succeeded = sum(1 for info in retry_info_dict.values() if info.get("retry_succeeded", False))
+            print(f"  Points that required retry: {retry_attempted}")
+            print(f"  Points where retry succeeded: {retry_succeeded}")
     
-    # Sort parameter values
-    param1_values = sorted(param1_values)
-    param2_values = sorted(param2_values)
-    
-    # Convert np.inf to "inf" string for JSON compatibility
-    llh_grid_json = [[("inf" if np.isinf(val) else val) for val in row] for row in llh_grid.tolist()]
-    
-    # Convert fit_times (nan to None for JSON)
-    fit_times_json = [[(None if np.isnan(val) else val) for val in row] for row in fit_times.tolist()]
-    
-    # Create retry info summary
-    retry_summary = {
-        "retry_attempted": [[retry_info_grid.get((i, j), {}).get("retry_attempted", False) 
-                             for j in range(n2)] for i in range(n1)],
-        "retry_succeeded": [[retry_info_grid.get((i, j), {}).get("retry_succeeded", False) 
-                            for j in range(n2)] for i in range(n1)],
-        "retry_attempt": [[retry_info_grid.get((i, j), {}).get("retry_attempt", 0) 
-                          for j in range(n2)] for i in range(n1)],
-    }
-    
-    # Create summary
-    summary = {
-        "param1_name": param1_name,
-        "param1_values": param1_values,
-        "param2_name": param2_name,
-        "param2_values": param2_values,
-        "llh_grid": llh_grid_json,
-        "fit_times": fit_times_json,
-        "model": model,
-        "total_points": n1 * n2,
-        "completed_points": len(results),
-        "retry_info": retry_summary,
-    }
-    
-    # Save summary
-    with open(summary_file, "w") as f:
-        json.dump(summary, f, indent=2)
-    
-    print(f"Summary saved to {summary_file}")
-    print(f"  Grid size: {n1} x {n2} = {n1 * n2} points")
-    print(f"  Completed: {len(results)} points")
-    print(f"  Missing: {n1 * n2 - len(results)} points")
-    
-    # Count successful vs failed fits
-    successful = np.sum(~np.isinf(llh_grid))
-    failed = np.sum(np.isinf(llh_grid))
-    print(f"  Successful fits: {successful}")
-    print(f"  Failed fits: {failed}")
-    
-    # Count retry statistics
-    if retry_info_grid:
-        retry_attempted = sum(1 for info in retry_info_grid.values() if info.get("retry_attempted", False))
-        retry_succeeded = sum(1 for info in retry_info_grid.values() if info.get("retry_succeeded", False))
-        print(f"  Points that required retry: {retry_attempted}")
-        print(f"  Points where retry succeeded: {retry_succeeded}")
+    else:
+        # 2D parameter scan
+        param1_name = first_result["param1_name"]
+        param2_name = first_result["param2_name"]
+        model = first_result["model"]
+        
+        # Initialize grid arrays
+        llh_grid = np.full((n1, n2), np.inf)
+        fit_times = np.full((n1, n2), np.nan)
+        retry_info_grid = {}  # Store retry info by grid index
+        
+        # Extract parameter values (assuming they match the grid)
+        param1_values = []
+        param2_values = []
+        
+        # Fill in the grid
+        for result in results:
+            job_idx = result["job_index"]
+            i, j = result["grid_index"]
+            grid_key = (i, j)
+            
+            # Convert "inf" string back to np.inf for processing
+            llh_val = result["llh"]
+            if llh_val == "inf" or (isinstance(llh_val, float) and np.isinf(llh_val)):
+                llh_grid[i, j] = np.inf
+            else:
+                llh_grid[i, j] = float(llh_val)
+            
+            fit_times[i, j] = result["fit_time"]
+            
+            # Store retry info if available
+            if "retry_info" in result:
+                retry_info_grid[grid_key] = result["retry_info"]
+            
+            # Collect unique parameter values
+            p1_val = result["param1_value"]
+            p2_val = result["param2_value"]
+            if p1_val not in param1_values:
+                param1_values.append(p1_val)
+            if p2_val not in param2_values:
+                param2_values.append(p2_val)
+        
+        # Sort parameter values
+        param1_values = sorted(param1_values)
+        param2_values = sorted(param2_values)
+        
+        # Convert np.inf to "inf" string for JSON compatibility
+        llh_grid_json = [[("inf" if np.isinf(val) else val) for val in row] for row in llh_grid.tolist()]
+        
+        # Convert fit_times (nan to None for JSON)
+        fit_times_json = [[(None if np.isnan(val) else val) for val in row] for row in fit_times.tolist()]
+        
+        # Create retry info summary
+        retry_summary = {
+            "retry_attempted": [[retry_info_grid.get((i, j), {}).get("retry_attempted", False) 
+                                 for j in range(n2)] for i in range(n1)],
+            "retry_succeeded": [[retry_info_grid.get((i, j), {}).get("retry_succeeded", False) 
+                                for j in range(n2)] for i in range(n1)],
+            "retry_attempt": [[retry_info_grid.get((i, j), {}).get("retry_attempt", 0) 
+                              for j in range(n2)] for i in range(n1)],
+        }
+        
+        # Create summary
+        summary = {
+            "param1_name": param1_name,
+            "param1_values": param1_values,
+            "param2_name": param2_name,
+            "param2_values": param2_values,
+            "llh_grid": llh_grid_json,
+            "fit_times": fit_times_json,
+            "model": model,
+            "total_points": n1 * n2,
+            "completed_points": len(results),
+            "retry_info": retry_summary,
+        }
+        
+        # Save summary
+        with open(summary_file, "w") as f:
+            json.dump(summary, f, indent=2)
+        
+        print(f"Summary saved to {summary_file}")
+        print(f"  Grid size: {n1} x {n2} = {n1 * n2} points")
+        print(f"  Completed: {len(results)} points")
+        print(f"  Missing: {n1 * n2 - len(results)} points")
+        
+        # Count successful vs failed fits
+        successful = np.sum(~np.isinf(llh_grid))
+        failed = np.sum(np.isinf(llh_grid))
+        print(f"  Successful fits: {successful}")
+        print(f"  Failed fits: {failed}")
+        
+        # Count retry statistics
+        if retry_info_grid:
+            retry_attempted = sum(1 for info in retry_info_grid.values() if info.get("retry_attempted", False))
+            retry_succeeded = sum(1 for info in retry_info_grid.values() if info.get("retry_succeeded", False))
+            print(f"  Points that required retry: {retry_attempted}")
+            print(f"  Points where retry succeeded: {retry_succeeded}")
 
 
 def main():
@@ -150,6 +263,12 @@ def main():
         help="Directory containing results.jsonl"
     )
     parser.add_argument(
+        "--results_file",
+        type=str,
+        required=True,
+        help="Results.jsonl file to combine"
+    )
+    parser.add_argument(
         "--n1",
         type=int,
         required=True,
@@ -158,13 +277,14 @@ def main():
     parser.add_argument(
         "--n2",
         type=int,
-        required=True,
-        help="Number of points for parameter 2"
+        required=False,
+        default=None,
+        help="Number of points for parameter 2 (optional, omit for 1D scans)"
     )
     
     args = parser.parse_args()
     
-    results_file = os.path.join(args.results_dir, "results.jsonl")
+    results_file = os.path.join(args.results_dir, args.results_file)
     combine_results(results_file, args.results_dir, args.n1, args.n2)
 
 

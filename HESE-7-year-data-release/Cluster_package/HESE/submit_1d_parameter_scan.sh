@@ -20,12 +20,21 @@ export NUMEXPR_NUM_THREADS=1
 
 
 python3 scan_parameter.py \
-    --model nusiprop \
-    --param mntot \
-    --pmin 0.06 \
-    --pmax 0.15 \
+    --model bpl \
+    --normal t \
+    --majorana t \
+    --nuSI False \
+    --astro_gamma 2.0 \
+    --param E_break \
+    --pmin 4e4 \
+    --pmax 2e5 \
+    --log_space \
     --npoints 15 \
+    --factr 10 \
+    --pgtol 1e-6 \
+    --m 10 \
+    --maxiter 400 \
     --cluster_mode \
     --job_index $SLURM_ARRAY_TASK_ID \
-    --output_dir 1d_parameter_scan
-    
+    --results_file results_Ebreak_4e4_to_2e5.jsonl \
+    --output_dir 1d_parameter_scan/BPL_Ebreak \

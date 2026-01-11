@@ -1,0 +1,35 @@
+{
+  "param1_name": "Mphi",
+  "param1_values": [
+    0.1,
+    1.0
+  ],
+  "param2_name": "g",
+  "param2_values": [
+    0.01,
+    0.1
+  ],
+  "llh_grid": [
+    [
+      "inf",
+      "inf"
+    ],
+    [
+      "inf",
+      "inf"
+    ]
+  ],
+  "fit_times": [
+    3.8869194984436035,
+    3.1599626541137695,
+    4.011658430099487,
+    4.692668437957764
+  ],
+  "model": "spl",
+  "total_points": 4,
+  "total_time": 15.757381916046143,
+  "pgtol": null,
+  "factr": 10000000.0,
+  "m": null,
+  "maxiter": null
+}
